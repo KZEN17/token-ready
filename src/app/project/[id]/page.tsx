@@ -298,7 +298,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                                             />
                                         </Box>
                                         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                            "{review.comment}"
+                                            &quot;{review.comment}&quot;
                                         </Typography>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                             <Star fontSize="small" color="secondary" />

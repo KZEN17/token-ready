@@ -72,7 +72,7 @@ export default function FeaturesSection() {
         },
     ];
 
-    const FeatureGrid = ({ features, title }: { features: any[], title: string }) => (
+    const FeatureGrid = ({ features, title }: { features: typeof founderFeatures, title: string }) => (
         <Box sx={{ mb: 8 }}>
             <Typography variant="h3" sx={{ mb: 4, textAlign: 'center' }}>
                 {title}
