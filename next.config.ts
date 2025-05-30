@@ -1,7 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    domains: ['cloud.appwrite.io'],
+  },
+  env: {
+    NEXT_PUBLIC_APPWRITE_ENDPOINT: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT,
+    NEXT_PUBLIC_APPWRITE_PROJECT_ID: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID,
+    NEXT_PUBLIC_APPWRITE_DATABASE_ID: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+    NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID: process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION_ID,
+    NEXT_PUBLIC_APPWRITE_REVIEWS_COLLECTION_ID: process.env.NEXT_PUBLIC_APPWRITE_REVIEWS_COLLECTION_ID,
+    NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID: process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID,
+  },
+
 };
 
 export default nextConfig;
