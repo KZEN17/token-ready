@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import Link from 'next/link';
-import { AccountBalanceWallet, Person } from '@mui/icons-material';
+import { AccountBalanceWallet, Person, Twitter, Telegram, MenuBook } from '@mui/icons-material';
 
 export default function Header() {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -46,39 +46,79 @@ export default function Header() {
                         </Typography>
                     </Link>
 
+                    {/* Social Links next to logo */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2 }}>
+                        <IconButton
+                            size="small"
+                            sx={{ color: '#00ff88' }}
+                            href="https://twitter.com/tokenready"
+                            target="_blank"
+                        >
+                            <Twitter fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            sx={{ color: '#00ff88' }}
+                            href="https://t.me/tokenready"
+                            target="_blank"
+                        >
+                            <Telegram fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            sx={{ color: '#00ff88' }}
+                            href="https://docs.tokenready.io"
+                            target="_blank"
+                        >
+                            <MenuBook fontSize="small" />
+                        </IconButton>
+                    </Box>
+
                     <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, ml: 4 }}>
                         <Link href="/explore" passHref>
-                            <Button color="inherit" sx={{ mx: 1 }}>
+                            <Button color="inherit" sx={{ mx: 1, fontSize: '0.875rem' }}>
                                 Explore
                             </Button>
                         </Link>
                         <Link href="/submit" passHref>
-                            <Button color="inherit" sx={{ mx: 1 }}>
+                            <Button color="inherit" sx={{ mx: 1, fontSize: '0.875rem' }}>
                                 Submit Project
                             </Button>
                         </Link>
-                        <Button color="inherit" sx={{ mx: 1 }}>
-                            Staking
-                        </Button>
-                        <Button color="inherit" sx={{ mx: 1 }}>
+                        <Link href="/staking" passHref>
+                            <Button color="inherit" sx={{ mx: 1, fontSize: '0.875rem' }}>
+                                Staking
+                            </Button>
+                        </Link>
+                        <Button color="inherit" sx={{ mx: 1, fontSize: '0.875rem' }}>
                             Leaderboard
                         </Button>
                     </Box>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 } }}>
                         <Button
                             variant="outlined"
-                            startIcon={<AccountBalanceWallet />}
+                            startIcon={<AccountBalanceWallet sx={{ display: { xs: 'none', sm: 'block' } }} />}
+
                             sx={{
                                 borderColor: 'primary.main',
                                 color: 'primary.main',
+                                fontSize: { xs: '0.8rem', md: '0.875rem' },
+                                // px: { xs: 1.5, md: 2 },
+                                // py: { xs: 0.5, md: 1 },
+                                // minWidth: { xs: 'auto', md: 'auto' },
                                 '&:hover': {
                                     borderColor: 'primary.light',
                                     backgroundColor: 'rgba(0, 255, 136, 0.1)',
                                 },
                             }}
                         >
-                            Connect Wallet
+                            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                                Connect Wallet
+                            </Box>
+                            <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                                Connect
+                            </Box>
                         </Button>
 
                         <IconButton
@@ -104,6 +144,7 @@ export default function Header() {
                         >
                             <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
                             <MenuItem onClick={handleMenuClose}>My Projects</MenuItem>
+                            <MenuItem onClick={handleMenuClose}>Believer Points</MenuItem>
                             <MenuItem onClick={handleMenuClose}>Settings</MenuItem>
                             <MenuItem onClick={handleMenuClose}>Logout</MenuItem>
                         </Menu>

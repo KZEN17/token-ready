@@ -26,6 +26,7 @@ export interface Review {
     rating: number;
     comment: string;
     investment: number;
+    believerPoints: number; // Points earned for this review
     createdAt: string;
 }
 
@@ -36,7 +37,11 @@ export interface User {
     wallet?: string;
     totalStaked: number;
     bobPoints: number;
+    believerPoints: number; // New field for believer points
     reviewsCount: number;
+    projectsSupported: number; // New field
+    twitterHandle?: string; // For KOL authentication
+    isVerifiedKOL: boolean; // For influencer verification
 }
 
 export interface StakingPool {
@@ -45,4 +50,14 @@ export interface StakingPool {
     apr: number;
     activeProjects: number;
     participants: number;
+}
+
+export interface BelieverActivity {
+    $id?: string;
+    userId: string;
+    activity: 'review' | 'vote' | 'stake' | 'early_support' | 'kol_endorsement';
+    pointsEarned: number;
+    projectId?: string;
+    description: string;
+    createdAt: string;
 }

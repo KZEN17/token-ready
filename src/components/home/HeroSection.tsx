@@ -42,24 +42,26 @@ export default function HeroSection() {
         <Box
             sx={{
                 background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)',
-                pt: 8,
-                pb: 12,
+                pt: { xs: 4, md: 8 },
+                pb: { xs: 8, md: 12 },
                 position: 'relative',
                 overflow: 'hidden',
             }}
         >
             <Container maxWidth="xl">
-                <Grid container spacing={6} alignItems="center">
-                    <Grid size={{ xs: 6, md: 6 }} >
+                <Grid container spacing={{ xs: 4, md: 6 }} alignItems="center">
+                    <Grid size={{ xs: 12, md: 6 }} >
                         <Typography
                             variant="h1"
                             sx={{
                                 fontWeight: 700,
                                 mb: 3,
+                                fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
                                 background: 'linear-gradient(135deg, #ffffff 0%, #00ff88 100%)',
                                 backgroundClip: 'text',
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
+                                lineHeight: 1.2,
                             }}
                             className="fade-in"
                         >
@@ -68,22 +70,35 @@ export default function HeroSection() {
                         <Typography
                             variant="h5"
                             color="text.secondary"
-                            sx={{ mb: 4, lineHeight: 1.6 }}
+                            sx={{
+                                mb: 4,
+                                lineHeight: 1.6,
+                                fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                            }}
                             className="fade-in"
                         >
                             Submit your project, get vetted by believers, and build momentum
                             with trust. We&apos;re the community-driven launchpad built for conviction-based investing.
                         </Typography>
-                        <Box sx={{ display: 'flex', gap: 2, mb: 6 }} className="fade-in">
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
+                                gap: 2,
+                                mb: 6
+                            }}
+                            className="fade-in"
+                        >
                             <Link href="/submit" passHref>
                                 <Button
                                     variant="contained"
                                     size="large"
                                     startIcon={<Rocket />}
                                     sx={{
-                                        px: 4,
-                                        py: 1.5,
-                                        fontSize: '1.1rem',
+                                        px: { xs: 3, sm: 4 },
+                                        py: { xs: 1.2, sm: 1.5 },
+                                        fontSize: { xs: '1rem', sm: '1.1rem' },
+                                        width: { xs: '100%', sm: 'auto' },
                                     }}
                                 >
                                     Submit Your Project
@@ -95,36 +110,59 @@ export default function HeroSection() {
                                     size="large"
                                     startIcon={<TrendingUp />}
                                     sx={{
-                                        px: 4,
-                                        py: 1.5,
-                                        fontSize: '1.1rem',
+                                        px: { xs: 3, sm: 4 },
+                                        py: { xs: 1.2, sm: 1.5 },
+                                        fontSize: { xs: '1rem', sm: '1.1rem' },
                                         borderColor: 'primary.main',
                                         color: 'primary.main',
+                                        width: { xs: '100%', sm: 'auto' },
                                     }}
                                 >
                                     Explore Projects
                                 </Button>
                             </Link>
                         </Box>
-                        <Box sx={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Typography variant="h4" color="primary.main" fontWeight={700}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
+                                gap: { xs: 3, sm: 4 },
+                                alignItems: { xs: 'flex-start', sm: 'center' },
+                            }}
+                        >
+                            <Box sx={{ textAlign: { xs: 'left', sm: 'center' } }}>
+                                <Typography
+                                    variant="h4"
+                                    color="primary.main"
+                                    fontWeight={700}
+                                    sx={{ fontSize: { xs: '1.8rem', sm: '2.125rem' } }}
+                                >
                                     $645K
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     Total Staked
                                 </Typography>
                             </Box>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Typography variant="h4" color="primary.main" fontWeight={700}>
+                            <Box sx={{ textAlign: { xs: 'left', sm: 'center' } }}>
+                                <Typography
+                                    variant="h4"
+                                    color="primary.main"
+                                    fontWeight={700}
+                                    sx={{ fontSize: { xs: '1.8rem', sm: '2.125rem' } }}
+                                >
                                     12.4%
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     Avg APR
                                 </Typography>
                             </Box>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Typography variant="h4" color="primary.main" fontWeight={700}>
+                            <Box sx={{ textAlign: { xs: 'left', sm: 'center' } }}>
+                                <Typography
+                                    variant="h4"
+                                    color="primary.main"
+                                    fontWeight={700}
+                                    sx={{ fontSize: { xs: '1.8rem', sm: '2.125rem' } }}
+                                >
                                     5
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
@@ -133,9 +171,17 @@ export default function HeroSection() {
                             </Box>
                         </Box>
                     </Grid>
-                    <Grid size={{ xs: 6, md: 6 }} >
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Box className="slide-up">
-                            <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    mb: 3,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                                }}
+                            >
                                 🔥 Top 3 Upcoming Projects
                             </Typography>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -148,9 +194,22 @@ export default function HeroSection() {
                                             border: '1px solid rgba(0, 255, 136, 0.2)',
                                         }}
                                     >
-                                        <CardContent>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                                <Typography variant="h6" color="primary.main">
+                                        <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    flexDirection: { xs: 'column', sm: 'row' },
+                                                    justifyContent: 'space-between',
+                                                    alignItems: { xs: 'flex-start', sm: 'center' },
+                                                    mb: 1,
+                                                    gap: { xs: 1, sm: 0 },
+                                                }}
+                                            >
+                                                <Typography
+                                                    variant="h6"
+                                                    color="primary.main"
+                                                    sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}
+                                                >
                                                     {project.name}
                                                 </Typography>
                                                 <Chip
@@ -159,20 +218,37 @@ export default function HeroSection() {
                                                     sx={{
                                                         backgroundColor: 'rgba(0, 255, 136, 0.2)',
                                                         color: 'primary.main',
+                                                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
                                                     }}
                                                 />
                                             </Box>
-                                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                sx={{ mb: 2 }}
+                                            >
                                                 {project.category}
                                             </Typography>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    flexDirection: { xs: 'column', sm: 'row' },
+                                                    justifyContent: 'space-between',
+                                                    alignItems: { xs: 'flex-start', sm: 'center' },
+                                                    gap: { xs: 1, sm: 0 },
+                                                }}
+                                            >
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                     <People fontSize="small" />
                                                     <Typography variant="body2">
                                                         Believers: {project.believers}
                                                     </Typography>
                                                 </Box>
-                                                <Typography variant="body2" color="primary.main" fontWeight={600}>
+                                                <Typography
+                                                    variant="body2"
+                                                    color="primary.main"
+                                                    fontWeight={600}
+                                                >
                                                     BOB Score: {project.bobScore}
                                                 </Typography>
                                             </Box>
