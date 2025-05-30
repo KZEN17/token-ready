@@ -27,14 +27,19 @@ import {
     Star,
 } from '@mui/icons-material';
 
-export default function ProjectDetailsPage({ params }: { params: { id: string } }) {
+export default async function ProjectDetailsPage({
+    params
+}: {
+    params: Promise<{ id: string }>
+}) {
+    const { id } = await params;
     const [rating, setRating] = useState(8);
     const [review, setReview] = useState('');
     const [investment, setInvestment] = useState(1500);
 
     // Mock project data - replace with actual API call
     const project = {
-        id: params.id,
+        id: id,
         name: 'VaderAI',
         ticker: 'VADER',
         description: 'AI-powered trading agent protocol revolutionizing automated trading strategies with advanced machine learning algorithms.',
@@ -81,7 +86,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
         <Container maxWidth="xl" sx={{ py: 4 }}>
             <Grid container spacing={4}>
                 {/* Project Header */}
-                <Grid size={{ xs: 12 }} >
+                <Grid size={{ xs: 12 }}>
                     <Card>
                         <CardContent sx={{ p: 4 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 3 }}>
@@ -126,7 +131,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                             </Typography>
 
                             <Grid container spacing={3}>
-                                <Grid size={{ xs: 6, sm: 3 }} >
+                                <Grid size={{ xs: 6, sm: 3 }}>
                                     <Box sx={{ textAlign: 'center' }}>
                                         <People color="primary" sx={{ mb: 1 }} />
                                         <Typography variant="h6" color="primary.main">
@@ -137,7 +142,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                                         </Typography>
                                     </Box>
                                 </Grid>
-                                <Grid size={{ xs: 6, sm: 3 }} >
+                                <Grid size={{ xs: 6, sm: 3 }}>
                                     <Box sx={{ textAlign: 'center' }}>
                                         <Star color="secondary" sx={{ mb: 1 }} />
                                         <Typography variant="h6" color="secondary.main">
@@ -148,7 +153,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                                         </Typography>
                                     </Box>
                                 </Grid>
-                                <Grid size={{ xs: 6, sm: 3 }} >
+                                <Grid size={{ xs: 6, sm: 3 }}>
                                     <Box sx={{ textAlign: 'center' }}>
                                         <TrendingUp sx={{ mb: 1 }} />
                                         <Typography variant="h6" color="primary.main">
@@ -159,7 +164,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                                         </Typography>
                                     </Box>
                                 </Grid>
-                                <Grid size={{ xs: 6, sm: 3 }} >
+                                <Grid size={{ xs: 6, sm: 3 }}>
                                     <Box sx={{ textAlign: 'center' }}>
                                         <Typography variant="h6" color="primary.main" sx={{ mb: 1 }}>
                                             {project.bobScore}
@@ -277,7 +282,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                 </Grid>
 
                 {/* Latest Reviews */}
-                <Grid size={{ xs: 12, md: 4 }} >
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Card>
                         <CardContent sx={{ p: 3 }}>
                             <Typography variant="h6" gutterBottom>
@@ -298,7 +303,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                                             />
                                         </Box>
                                         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                            &quot;{review.comment}&quot;
+                                            "{review.comment}"
                                         </Typography>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                             <Star fontSize="small" color="secondary" />
@@ -315,7 +320,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                 </Grid>
 
                 {/* Detailed Information */}
-                <Grid size={{ xs: 12 }} >
+                <Grid size={{ xs: 12 }}>
                     <Card>
                         <CardContent sx={{ p: 4 }}>
                             <Typography variant="h5" gutterBottom>
@@ -326,7 +331,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                             </Typography>
 
                             <Grid container spacing={4}>
-                                <Grid size={{ xs: 12, md: 6 }} >
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="h6" gutterBottom>
                                         👥 Team
                                     </Typography>
@@ -347,7 +352,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                                     </Box>
                                 </Grid>
 
-                                <Grid size={{ xs: 12, md: 6 }} >
+                                <Grid size={{ xs: 12, md: 6 }}>
                                     <Typography variant="h6" gutterBottom>
                                         🗺️ Roadmap
                                     </Typography>
