@@ -50,7 +50,7 @@ export default function HeroSection() {
         >
             <Container maxWidth="xl">
                 <Grid container spacing={6} alignItems="center">
-                    <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid size={{ xs: 6, md: 6 }} >
                         <Typography
                             variant="h1"
                             sx={{
@@ -72,7 +72,7 @@ export default function HeroSection() {
                             className="fade-in"
                         >
                             Submit your project, get vetted by believers, and build momentum
-                            with trust. We're the community-driven launchpad built for conviction-based investing.
+                            with trust. We&apos;re the community-driven launchpad built for conviction-based investing.
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 2, mb: 6 }} className="fade-in">
                             <Link href="/submit" passHref>
@@ -133,7 +133,7 @@ export default function HeroSection() {
                             </Box>
                         </Box>
                     </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid size={{ xs: 6, md: 6 }} >
                         <Box className="slide-up">
                             <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
                                 🔥 Top 3 Upcoming Projects

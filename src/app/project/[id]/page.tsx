@@ -63,7 +63,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
     };
 
     const recentReviews = [
-        { user: '@alpha_bob', rating: 9, comment: 'SMOJO team is KYC\'d & docs ready. Worth watching.', bobPoints: 187 },
+        { user: '@alpha_bob', rating: 9, comment: 'SMOJO team is KYC&apos;d & docs ready. Worth watching.', bobPoints: 187 },
         { user: '@earlydgen', rating: 7, comment: 'XENO looks rushed. Website is one pager and no GitHub.', bobPoints: 161 },
         { user: '@honestbagger', rating: 8, comment: 'SARC is overhyped but still has devs shipping.', bobPoints: 140 },
         { user: '@checkmate', rating: 9, comment: 'SKAI has the best tokenomics I\'ve seen so far.', bobPoints: 126 },
@@ -126,7 +126,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                             </Typography>
 
                             <Grid container spacing={3}>
-                                <Grid size={{ xs: 12, sm: 3 }} >
+                                <Grid size={{ xs: 6, sm: 3 }} >
                                     <Box sx={{ textAlign: 'center' }}>
                                         <People color="primary" sx={{ mb: 1 }} />
                                         <Typography variant="h6" color="primary.main">
@@ -137,7 +137,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                                         </Typography>
                                     </Box>
                                 </Grid>
-                                <Grid size={{ xs: 12, sm: 3 }} >
+                                <Grid size={{ xs: 6, sm: 3 }} >
                                     <Box sx={{ textAlign: 'center' }}>
                                         <Star color="secondary" sx={{ mb: 1 }} />
                                         <Typography variant="h6" color="secondary.main">
@@ -148,7 +148,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                                         </Typography>
                                     </Box>
                                 </Grid>
-                                <Grid size={{ xs: 12, sm: 3 }} >
+                                <Grid size={{ xs: 6, sm: 3 }} >
                                     <Box sx={{ textAlign: 'center' }}>
                                         <TrendingUp sx={{ mb: 1 }} />
                                         <Typography variant="h6" color="primary.main">
@@ -159,7 +159,7 @@ export default function ProjectDetailsPage({ params }: { params: { id: string } 
                                         </Typography>
                                     </Box>
                                 </Grid>
-                                <Grid size={{ xs: 12, sm: 3 }} >
+                                <Grid size={{ xs: 6, sm: 3 }} >
                                     <Box sx={{ textAlign: 'center' }}>
                                         <Typography variant="h6" color="primary.main" sx={{ mb: 1 }}>
                                             {project.bobScore}

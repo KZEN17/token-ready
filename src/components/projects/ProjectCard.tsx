@@ -12,7 +12,6 @@ import {
 } from '@mui/material';
 import {
     People,
-    TrendingUp,
     Star,
     ThumbUp,
     AccountBalanceWallet,
@@ -101,7 +100,7 @@ export default function ProjectCard({
                     <Chip
                         label={getStatusLabel(project.status)}
                         size="small"
-                        color={getStatusColor(project.status) as any}
+                        color={getStatusColor(project.status) as 'success' | 'warning' | 'error' | 'default'}
                         sx={{ fontSize: '0.75rem' }}
                     />
                 </Box>

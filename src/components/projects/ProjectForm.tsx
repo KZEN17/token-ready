@@ -112,7 +112,7 @@ export default function ProjectForm() {
                         />
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 6 }} >
+                    <Grid size={{ xs: 12, sm: 6 }}  >
                         <TextField
                             fullWidth
                             label="Token Ticker"
@@ -123,7 +123,7 @@ export default function ProjectForm() {
                         />
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 6 }} >
+                    <Grid size={{ xs: 12, sm: 6 }}  >
                         <FormControl fullWidth error={!!errors.category}>
                             <InputLabel>Category</InputLabel>
                             <Select
@@ -140,7 +140,7 @@ export default function ProjectForm() {
                         </FormControl>
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                    <Grid size={{ xs: 12, sm: 6 }} >
                         <TextField
                             fullWidth
                             label="Project Twitter Handle"
@@ -151,7 +151,7 @@ export default function ProjectForm() {
                         />
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                    <Grid size={{ xs: 12, sm: 6 }} >
                         <TextField
                             fullWidth
                             label="Website URL"
@@ -184,7 +184,7 @@ export default function ProjectForm() {
                         />
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 6 }}  >
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                             fullWidth
                             type="date"
@@ -194,7 +194,7 @@ export default function ProjectForm() {
                         />
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 6 }} >
+                    <Grid size={{ xs: 12, sm: 6 }}  >
                         <FormControl fullWidth>
                             <InputLabel>Request Twitter Space for Launch?</InputLabel>
                             <Select
@@ -203,7 +203,7 @@ export default function ProjectForm() {
                                 {...register('requestTwitterSpace')}
                             >
                                 <MenuItem value="true">Yes - Please Coordinate</MenuItem>
-                                <MenuItem value="false">No - We'll handle it</MenuItem>
+                                <MenuItem value="false">No - We&apos;ll handle it</MenuItem>
                             </Select>
                         </FormControl>
                     </Grid>
@@ -233,7 +233,7 @@ export default function ProjectForm() {
                             ✅ Aixbc Extended Checklist
                         </Typography>
                         <Alert severity="info" sx={{ mb: 2 }}>
-                            Complete these items to improve your project's review score and visibility
+                            Complete these items to improve your project&apos;s review score and visibility
                         </Alert>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                             {checklistItems.map((item, index) => (
