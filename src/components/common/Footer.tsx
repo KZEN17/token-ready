@@ -9,6 +9,7 @@ import {
     IconButton,
 } from '@mui/material';
 import { Twitter, GitHub, Telegram } from '@mui/icons-material';
+import Logo from './Logo';
 
 export default function Footer() {
     return (
@@ -25,9 +26,7 @@ export default function Footer() {
             <Container maxWidth="lg">
                 <Grid container spacing={4}>
                     <Grid size={{ xs: 12, md: 6 }}>
-                        <Typography variant="h6" gutterBottom className="gradient-text">
-                            TokenReady
-                        </Typography>
+                        <Logo size="large" />
                         <Typography variant="body2" color="text.secondary">
                             Where conviction meets launch. Curate, rate, and help projects launch with belief.
                         </Typography>

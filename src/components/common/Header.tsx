@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -15,7 +14,8 @@ import {
 import { useState } from 'react';
 import Link from 'next/link';
 import { AccountBalanceWallet, Person, Twitter, Telegram, MenuBook } from '@mui/icons-material';
-import Image from 'next/image';
+import Logo from './Logo';
+
 export default function Header() {
     const theme = useTheme();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -32,9 +32,8 @@ export default function Header() {
         <AppBar position="sticky">
             <Container maxWidth="xl">
                 <Toolbar disableGutters>
-                    <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                        <Image src={'/logo.svg'} alt='' width={300} height={50} />
-                    </Link>
+                    {/* Logo */}
+                    <Logo size="medium" />
 
                     {/* Social Links next to logo */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2 }}>
@@ -43,7 +42,7 @@ export default function Header() {
                             sx={{
                                 color: theme.palette.primary.main,
                                 '&:hover': {
-                                    backgroundColor: (theme) => `${theme.palette.primary.main}`,
+                                    backgroundColor: (theme) => `${theme.palette.primary.main}15`,
                                 },
                             }}
                             href="https://twitter.com/tokenready"
