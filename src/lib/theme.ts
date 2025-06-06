@@ -2,6 +2,20 @@
 
 import { createTheme } from '@mui/material/styles';
 
+declare module '@mui/material/styles' {
+    interface Theme {
+        status: {
+            danger: string;
+        };
+    }
+
+    interface ThemeOptions {
+        status?: {
+            danger?: string;
+        };
+    }
+}
+
 export const theme = createTheme({
     palette: {
         mode: 'dark',
@@ -114,9 +128,19 @@ export const theme = createTheme({
     components: {
         MuiCssBaseline: {
             styleOverrides: {
+                html: {
+                    WebkitFontSmoothing: 'antialiased',
+                    MozOsxFontSmoothing: 'grayscale',
+                    boxSizing: 'border-box',
+                },
+                '*, *::before, *::after': {
+                    boxSizing: 'inherit',
+                },
                 body: {
+                    margin: 0,
                     background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
                     minHeight: '100vh',
+                    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif',
                 },
             },
         },

@@ -39,6 +39,59 @@ interface ProjectFormData {
     category: string;
 }
 
+// Enhanced logo validation function
+const validateLogoFile = (file: File): Promise<{ isValid: boolean; error?: string }> => {
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+        return Promise.resolve({
+            isValid: false,
+            error: 'Please select a valid image file (JPEG, PNG, GIF, WebP, or SVG)'
+        });
+    }
+
+    // Check file size (5MB max)
+    const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSizeInBytes) {
+        return Promise.resolve({
+            isValid: false,
+            error: `File size must be less than 5MB. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`
+        });
+    }
+
+    // Check minimum dimensions for better quality
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const minWidth = 64;
+            const minHeight = 64;
+            const maxWidth = 2048;
+            const maxHeight = 2048;
+
+            if (img.width < minWidth || img.height < minHeight) {
+                resolve({
+                    isValid: false,
+                    error: `Image dimensions too small. Minimum: ${minWidth}x${minHeight}px, Current: ${img.width}x${img.height}px`
+                });
+            } else if (img.width > maxWidth || img.height > maxHeight) {
+                resolve({
+                    isValid: false,
+                    error: `Image dimensions too large. Maximum: ${maxWidth}x${maxHeight}px, Current: ${img.width}x${img.height}px`
+                });
+            } else {
+                resolve({ isValid: true });
+            }
+        };
+        img.onerror = () => {
+            resolve({
+                isValid: false,
+                error: 'Invalid image file or corrupted image'
+            });
+        };
+        img.src = URL.createObjectURL(file);
+    });
+};
+
 export default function ProjectForm() {
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
@@ -88,27 +141,44 @@ export default function ProjectForm() {
         'Dexscreener, icon, site, and contract filled',
     ];
 
-    const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Updated handleLogoChange function with enhanced validation
+    const handleLogoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (file) {
-            if (!file.type.startsWith('image/')) {
-                setError('Please select a valid image file');
+        if (!file) return;
+
+        setError(null);
+        setUploadingLogo(true);
+
+        try {
+            // Validate file
+            const validation = await validateLogoFile(file);
+
+            if (!validation.isValid) {
+                setError(validation.error!);
+                setUploadingLogo(false);
+                // Clear the input
+                event.target.value = '';
                 return;
             }
 
-            if (file.size > 5 * 1024 * 1024) {
-                setError('Image file size must be less than 5MB');
-                return;
-            }
-
+            // If validation passes, set the file and preview
             setLogoFile(file);
 
             const reader = new FileReader();
             reader.onloadend = () => {
                 setLogoPreview(reader.result as string);
+                setUploadingLogo(false);
+            };
+            reader.onerror = () => {
+                setError('Failed to read the image file');
+                setUploadingLogo(false);
             };
             reader.readAsDataURL(file);
-            setError(null);
+
+        } catch (error) {
+            setError('Failed to validate the image file');
+            setUploadingLogo(false);
+            event.target.value = '';
         }
     };
 
@@ -200,7 +270,7 @@ export default function ProjectForm() {
                 bobScore: 0,
                 estimatedReturn: 0,
                 simulatedInvestment: 0,
-                upvotedBy: [],
+                upvotes: [],
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             };
@@ -286,8 +356,6 @@ export default function ProjectForm() {
             py: 4
         }}>
             <Box sx={{ maxWidth: 800, mx: 'auto', p: 4 }}>
-
-
                 <Paper sx={{
                     p: 4,
                     border: '1px solid #333',
@@ -307,7 +375,7 @@ export default function ProjectForm() {
 
                     <Box component="form" onSubmit={handleSubmit(onSubmit)}>
                         <Grid container spacing={3}>
-                            {/* Logo Upload Section */}
+                            {/* Logo Upload Section with Enhanced Validation */}
                             <Grid size={{ xs: 12 }}>
                                 <Typography variant="h6" sx={{ color: '#FFD700', mb: 2, fontWeight: 'bold' }}>
                                     Project Logo
@@ -329,7 +397,7 @@ export default function ProjectForm() {
                                     </Avatar>
                                     <Box>
                                         <input
-                                            accept="image/*"
+                                            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml"
                                             style={{ display: 'none' }}
                                             id="logo-upload"
                                             type="file"
@@ -337,29 +405,60 @@ export default function ProjectForm() {
                                             disabled={uploadingLogo}
                                         />
                                         <label htmlFor="logo-upload">
-                                            <IconButton
-                                                sx={{ color: '#FFD700' }}
+                                            <Button
+                                                variant="outlined"
                                                 component="span"
                                                 disabled={uploadingLogo}
+                                                startIcon={uploadingLogo ? <CircularProgress size={16} /> : <PhotoCamera />}
+                                                sx={{
+                                                    borderColor: '#FFD700',
+                                                    color: '#FFD700',
+                                                    '&:hover': {
+                                                        backgroundColor: alpha('#FFD700', 0.1),
+                                                        borderColor: '#FFD700'
+                                                    }
+                                                }}
                                             >
-                                                <PhotoCamera />
-                                            </IconButton>
+                                                {uploadingLogo ? 'Processing...' : 'Choose Logo'}
+                                            </Button>
                                         </label>
-                                        {logoFile && (
+                                        {logoFile && !uploadingLogo && (
                                             <IconButton
-                                                sx={{ color: '#F44336' }}
+                                                sx={{ color: '#F44336', ml: 1 }}
                                                 onClick={removeLogo}
                                                 disabled={uploadingLogo}
                                             >
                                                 <Delete />
                                             </IconButton>
                                         )}
-                                        {uploadingLogo && <CircularProgress size={24} sx={{ color: '#FFD700' }} />}
                                     </Box>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: '#888' }}>
-                                    Upload a logo for your project (optional). Max file size: 5MB
-                                </Typography>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" sx={{ color: '#888', mb: 1 }}>
+                                        Upload a logo for your project (optional)
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
+                                        • Supported formats: JPEG, PNG, GIF, WebP, SVG
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
+                                        • Maximum file size: 5MB
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
+                                        • Recommended dimensions: 256x256px to 512x512px
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
+                                        • Square aspect ratio works best
+                                    </Typography>
+                                </Box>
+                                {logoFile && (
+                                    <Alert severity="success" sx={{
+                                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                                        color: '#4CAF50',
+                                        border: '1px solid #4CAF50'
+                                    }}>
+                                        Logo ready: {logoFile.name} ({(logoFile.size / 1024).toFixed(1)} KB)
+                                    </Alert>
+                                )}
                             </Grid>
 
                             {/* Project Name */}
@@ -595,7 +694,7 @@ export default function ProjectForm() {
                                             }
                                         }}
                                     >
-                                        <Add />
+                                        <Add color='primary' />
                                     </IconButton>
                                 </Box>
                                 {teamMembers.map((member, index) => (
