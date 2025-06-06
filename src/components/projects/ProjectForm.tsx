@@ -268,7 +268,7 @@ export default function ProjectForm() {
                 bobScore: 0,
                 estimatedReturn: 0,
                 simulatedInvestment: 0,
-                upvotes: [],
+                upvotedBy: [],
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             };
@@ -689,7 +689,7 @@ export default function ProjectForm() {
                                             }
                                         }}
                                     >
-                                        <Add />
+                                        <Add color='primary' />
                                     </IconButton>
                                 </Box>
                                 {teamMembers.map((member, index) => (
@@ -734,12 +734,12 @@ export default function ProjectForm() {
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     fullWidth
-                                    type="date"
-                                    label="Planned Launch Date *"
+                                    type="datetime-local"
+                                    label="Planned Launch Date & Time *"
                                     InputLabelProps={{ shrink: true }}
-                                    {...register('launchDate', { required: 'Launch date is required' })}
+                                    {...register('launchDate', { required: 'Launch date and time is required' })}
                                     error={!!errors.launchDate}
-                                    helperText={errors.launchDate?.message}
+                                    helperText={errors.launchDate?.message || "Select your preferred launch date and time (local timezone)"}
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
                                             backgroundColor: 'rgba(255, 215, 0, 0.05)',

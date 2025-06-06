@@ -16,6 +16,7 @@ export interface Project {
     reviews: number;
     bobScore: number;
     estimatedReturn: number;
+    simulatedInvestment: number; // Simulated investment amount
     upvotes: string[]; // Array of user IDs who upvoted
     teamMembers: string[]; // Array of team member strings
     createdAt: string;
