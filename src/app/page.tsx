@@ -7,6 +7,7 @@ import TeamSection from '@/components/home/TeamSection';
 import PartnersSection from '@/components/home/PartnersSection';
 import { Container } from '@mui/material';
 import StakingInfoSection from '@/components/home/StakingInfoSection';
+import StakingChartSection from '@/components/home/StakingChartSection';
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
       <HeroSection />
       <HowItWorksSection />
       <StakingInfoSection />
+      <StakingChartSection />
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Project Cards Section - using existing explore page projects */}
         <div id="top-projects">

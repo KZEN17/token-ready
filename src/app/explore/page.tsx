@@ -109,7 +109,7 @@ export default function ExplorePage() {
                 sx={{
                     mb: 2,
                     textAlign: 'center',
-                    background: 'linear-gradient(135deg, #ffffff 0%, #00ff88 100%)',
+                    background: (theme) => `linear-gradient(135deg, ${theme.palette.text.primary} 0%, ${theme.palette.primary.main} 100%)`,
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
@@ -196,7 +196,7 @@ export default function ExplorePage() {
                                 borderColor: 'primary.main',
                                 color: 'primary.main',
                                 '&:hover': {
-                                    backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                                    backgroundColor: (theme) => `${theme.palette.primary.main}15`,
                                 },
                             }}
                         />
