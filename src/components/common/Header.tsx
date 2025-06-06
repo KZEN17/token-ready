@@ -1,21 +1,23 @@
+
 'use client';
 
 import {
     AppBar,
     Toolbar,
-    Typography,
     Button,
     Box,
     Container,
     IconButton,
     Menu,
     MenuItem,
+    useTheme,
 } from '@mui/material';
 import { useState } from 'react';
 import Link from 'next/link';
 import { AccountBalanceWallet, Person, Twitter, Telegram, MenuBook } from '@mui/icons-material';
-
+import Image from 'next/image';
 export default function Header() {
+    const theme = useTheme();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -27,30 +29,23 @@ export default function Header() {
     };
 
     return (
-        <AppBar position="sticky" sx={{ background: 'rgba(10, 10, 10, 0.95)', backdropFilter: 'blur(10px)' }}>
+        <AppBar position="sticky">
             <Container maxWidth="xl">
                 <Toolbar disableGutters>
                     <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                        <Typography
-                            variant="h5"
-                            component="div"
-                            sx={{
-                                fontWeight: 700,
-                                background: 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
-                                backgroundClip: 'text',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                            }}
-                        >
-                            TokenReady
-                        </Typography>
+                        <Image src={'/logo.svg'} alt='' width={300} height={50} />
                     </Link>
 
                     {/* Social Links next to logo */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2 }}>
                         <IconButton
                             size="small"
-                            sx={{ color: '#00ff88' }}
+                            sx={{
+                                color: theme.palette.primary.main,
+                                '&:hover': {
+                                    backgroundColor: (theme) => `${theme.palette.primary.main}`,
+                                },
+                            }}
                             href="https://twitter.com/tokenready"
                             target="_blank"
                         >
@@ -58,7 +53,12 @@ export default function Header() {
                         </IconButton>
                         <IconButton
                             size="small"
-                            sx={{ color: '#00ff88' }}
+                            sx={{
+                                color: 'primary.main',
+                                '&:hover': {
+                                    backgroundColor: (theme) => `${theme.palette.primary.main}15`,
+                                },
+                            }}
                             href="https://t.me/tokenready"
                             target="_blank"
                         >
@@ -66,7 +66,12 @@ export default function Header() {
                         </IconButton>
                         <IconButton
                             size="small"
-                            sx={{ color: '#00ff88' }}
+                            sx={{
+                                color: 'primary.main',
+                                '&:hover': {
+                                    backgroundColor: (theme) => `${theme.palette.primary.main}15`,
+                                },
+                            }}
                             href="https://docs.tokenready.io"
                             target="_blank"
                         >
@@ -76,21 +81,61 @@ export default function Header() {
 
                     <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, ml: 4 }}>
                         <Link href="/explore" passHref>
-                            <Button color="inherit" sx={{ mx: 1, fontSize: '0.875rem' }}>
+                            <Button
+                                color="inherit"
+                                sx={{
+                                    mx: 1,
+                                    fontSize: '0.875rem',
+                                    color: 'text.primary',
+                                    '&:hover': {
+                                        backgroundColor: (theme) => `${theme.palette.primary.main}08`,
+                                    },
+                                }}
+                            >
                                 Explore
                             </Button>
                         </Link>
                         <Link href="/submit" passHref>
-                            <Button color="inherit" sx={{ mx: 1, fontSize: '0.875rem' }}>
+                            <Button
+                                color="inherit"
+                                sx={{
+                                    mx: 1,
+                                    fontSize: '0.875rem',
+                                    color: 'text.primary',
+                                    '&:hover': {
+                                        backgroundColor: (theme) => `${theme.palette.primary.main}08`,
+                                    },
+                                }}
+                            >
                                 Submit Project
                             </Button>
                         </Link>
                         <Link href="/staking" passHref>
-                            <Button color="inherit" sx={{ mx: 1, fontSize: '0.875rem' }}>
+                            <Button
+                                color="inherit"
+                                sx={{
+                                    mx: 1,
+                                    fontSize: '0.875rem',
+                                    color: 'text.primary',
+                                    '&:hover': {
+                                        backgroundColor: (theme) => `${theme.palette.primary.main}08`,
+                                    },
+                                }}
+                            >
                                 Staking
                             </Button>
                         </Link>
-                        <Button color="inherit" sx={{ mx: 1, fontSize: '0.875rem' }}>
+                        <Button
+                            color="inherit"
+                            sx={{
+                                mx: 1,
+                                fontSize: '0.875rem',
+                                color: 'text.primary',
+                                '&:hover': {
+                                    backgroundColor: (theme) => `${theme.palette.primary.main}08`,
+                                },
+                            }}
+                        >
                             Leaderboard
                         </Button>
                     </Box>
@@ -99,18 +144,8 @@ export default function Header() {
                         <Button
                             variant="outlined"
                             startIcon={<AccountBalanceWallet sx={{ display: { xs: 'none', sm: 'block' } }} />}
-
                             sx={{
-                                borderColor: 'primary.main',
-                                color: 'primary.main',
                                 fontSize: { xs: '0.8rem', md: '0.875rem' },
-                                // px: { xs: 1.5, md: 2 },
-                                // py: { xs: 0.5, md: 1 },
-                                // minWidth: { xs: 'auto', md: 'auto' },
-                                '&:hover': {
-                                    borderColor: 'primary.light',
-                                    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-                                },
                             }}
                         >
                             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
