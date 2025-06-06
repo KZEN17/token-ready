@@ -8,15 +8,19 @@ export interface Project {
     twitter: string;
     category: string;
     status: 'pending' | 'live' | 'ended';
-    launchDate?: string;
+    launchDate?: string; // Will be stored as datetime in Appwrite
+    logoUrl?: string; // New field for project logo
+    teamMembers?: string[]; // Changed to string array
+    whitepaper?: string; // New field for whitepaper/docs
+    requestTwitterSpace?: boolean; // New field for Twitter Space request
     totalStaked: number;
     believers: number;
     reviews: number;
     bobScore: number;
     estimatedReturn: number;
     simulatedInvestment: number;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: string; // Will be stored as datetime in Appwrite
+    updatedAt: string; // Will be stored as datetime in Appwrite
 }
 
 export interface Review {
