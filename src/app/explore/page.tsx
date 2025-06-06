@@ -41,6 +41,7 @@ import { useState, useEffect } from 'react';
 import { databases, DATABASE_ID, PROJECTS_COLLECTION_ID } from '../../lib/appwrite';
 import { Query } from 'appwrite';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface Project {
     $id: string;
@@ -60,12 +61,13 @@ interface Project {
     reviews: number;
     bobScore: number;
     estimatedReturn: number;
-    upvotedBy: string[]; // Array of user IDs who upvoted
+    upvotes: string[]; // Array of user IDs who upvoted
     teamMembers: string[]; // Array of team member strings
     createdAt: string;
 }
 
 export default function ExplorePage() {
+    const router = useRouter();
     const [projects, setProjects] = useState<Project[]>([]);
     const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
@@ -183,19 +185,19 @@ export default function ExplorePage() {
         const project = projects.find(p => p.$id === projectId);
         if (!project) return;
 
-        const isCurrentlyUpvoted = project.upvotedBy.includes(currentUserId);
-        let newUpvotedBy: string[];
+        const isCurrentlyUpvoted = project.upvotes.includes(currentUserId);
+        let newupvotes: string[];
 
         if (isCurrentlyUpvoted) {
-            newUpvotedBy = project.upvotedBy.filter(id => id !== currentUserId);
+            newupvotes = project.upvotes.filter(id => id !== currentUserId);
         } else {
-            newUpvotedBy = [...project.upvotedBy, currentUserId];
+            newupvotes = [...project.upvotes, currentUserId];
         }
 
         // Update local state immediately for better UX
         const updatedProjects = projects.map(p =>
             p.$id === projectId
-                ? { ...p, upvotedBy: newUpvotedBy }
+                ? { ...p, upvotes: newupvotes }
                 : p
         );
         setProjects(updatedProjects);
@@ -206,7 +208,7 @@ export default function ExplorePage() {
                 DATABASE_ID,
                 PROJECTS_COLLECTION_ID,
                 projectId,
-                { upvotedBy: newUpvotedBy }
+                { upvotes: newupvotes }
             );
         } catch (error) {
             console.error('Failed to update upvote:', error);
@@ -228,6 +230,10 @@ export default function ExplorePage() {
         if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
         if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
         return num.toString();
+    };
+
+    const handleCardClick = (projectId: string) => {
+        router.push(`/project/${projectId}`);
     };
 
     if (loading) {
@@ -489,8 +495,6 @@ export default function ExplorePage() {
                         {filteredProjects.map((project) => (
                             <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={project.$id}>
                                 <Card
-                                    component={Link}
-                                    href={`/project/${project.$id}`}
                                     sx={{
                                         height: '100%',
                                         background: 'linear-gradient(135deg, #1A1A1A, #2D2D2D)',
@@ -499,15 +503,14 @@ export default function ExplorePage() {
                                         overflow: 'hidden',
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                         position: 'relative',
-                                        textDecoration: 'none',
-                                        color: 'inherit',
-                                        display: 'block',
+                                        cursor: 'pointer',
                                         '&:hover': {
                                             transform: 'translateY(-8px)',
                                             boxShadow: `0 20px 40px ${alpha('#FFD700', 0.15)}`,
                                             borderColor: '#FFD700',
                                         }
                                     }}
+                                    onClick={() => handleCardClick(project.$id)}
                                 >
                                     {/* Status Indicator */}
                                     <Box
@@ -563,14 +566,14 @@ export default function ExplorePage() {
                                                         toggleUpvote(project.$id);
                                                     }}
                                                     sx={{
-                                                        color: project.upvotedBy.includes(currentUserId) ? '#00E676' : '#666',
+                                                        color: project.upvotes.includes(currentUserId) ? '#00E676' : '#666',
                                                         '&:hover': {
                                                             color: '#00E676',
                                                             transform: 'scale(1.1)',
                                                         }
                                                     }}
                                                 >
-                                                    {project.upvotedBy.includes(currentUserId) ? <ThumbUp /> : <ThumbUpOutlined />}
+                                                    {project.upvotes.includes(currentUserId) ? <ThumbUp /> : <ThumbUpOutlined />}
                                                 </IconButton>
                                                 <IconButton
                                                     onClick={(e) => {
@@ -624,8 +627,8 @@ export default function ExplorePage() {
                                                 color: '#B0B0B0',
                                                 mb: 2,
                                                 display: '-webkit-box',
-                                                '-webkit-line-clamp': 3,
-                                                '-webkit-box-orient': 'vertical',
+                                                WebkitLineClamp: 3,
+                                                WebkitBoxOrient: 'vertical',
                                                 overflow: 'hidden',
                                                 lineHeight: 1.5,
                                                 height: '4.5em'
@@ -645,8 +648,8 @@ export default function ExplorePage() {
                                                     sx={{
                                                         color: '#888',
                                                         display: '-webkit-box',
-                                                        '-webkit-line-clamp': 1,
-                                                        '-webkit-box-orient': 'vertical',
+                                                        WebkitLineClamp: 1,
+                                                        WebkitBoxOrient: 'vertical',
                                                         overflow: 'hidden'
                                                     }}
                                                 >
@@ -663,7 +666,7 @@ export default function ExplorePage() {
                                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
                                                         <ThumbUp sx={{ color: '#00E676', fontSize: '1rem', mr: 0.5 }} />
                                                         <Typography variant="h6" sx={{ color: '#00E676', fontWeight: 'bold' }}>
-                                                            {formatNumber(project.upvotedBy?.length || 0)}
+                                                            {formatNumber(project.upvotes?.length || 0)}
                                                         </Typography>
                                                     </Box>
                                                     <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
@@ -722,6 +725,7 @@ export default function ExplorePage() {
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={(e) => e.stopPropagation()}
+                                                component="a"
                                                 sx={{
                                                     flex: 1,
                                                     background: 'linear-gradient(45deg, #FFD700, #FFA500)',
@@ -741,9 +745,10 @@ export default function ExplorePage() {
                                                 variant="outlined"
                                                 size="small"
                                                 startIcon={<RateReview sx={{ fontSize: '1rem' }} />}
-                                                component={Link}
-                                                href={`/project/${project.$id}`}
-                                                onClick={(e) => e.stopPropagation()}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    router.push(`/project/${project.$id}`);
+                                                }}
                                                 sx={{
                                                     borderColor: '#00BFFF',
                                                     color: '#00BFFF',
@@ -765,6 +770,7 @@ export default function ExplorePage() {
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={(e) => e.stopPropagation()}
+                                                component="a"
                                                 sx={{
                                                     backgroundColor: alpha('#1DA1F2', 0.1),
                                                     color: '#1DA1F2',
@@ -785,6 +791,7 @@ export default function ExplorePage() {
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     onClick={(e) => e.stopPropagation()}
+                                                    component="a"
                                                     sx={{
                                                         backgroundColor: alpha('#666', 0.1),
                                                         color: '#666',

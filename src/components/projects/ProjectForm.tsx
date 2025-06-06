@@ -39,56 +39,54 @@ interface ProjectFormData {
     category: string;
 }
 
-// Enhanced logo validation function
+// Simplified logo validation function - only file type and minimum size
 const validateLogoFile = (file: File): Promise<{ isValid: boolean; error?: string }> => {
-    // Check file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-    if (!allowedTypes.includes(file.type)) {
-        return Promise.resolve({
-            isValid: false,
-            error: 'Please select a valid image file (JPEG, PNG, GIF, WebP, or SVG)'
-        });
-    }
-
-    // Check file size (5MB max)
-    const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSizeInBytes) {
-        return Promise.resolve({
-            isValid: false,
-            error: `File size must be less than 5MB. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`
-        });
-    }
-
-    // Check minimum dimensions for better quality
     return new Promise((resolve) => {
+        // Check file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+        if (!allowedTypes.includes(file.type)) {
+            resolve({
+                isValid: false,
+                error: 'Please select a valid image file (JPEG, PNG, GIF, WebP, or SVG)'
+            });
+            return;
+        }
+
+        // For SVG files, skip dimension check
+        if (file.type === 'image/svg+xml') {
+            resolve({ isValid: true });
+            return;
+        }
+
+        // Only check minimum dimensions for raster images
         const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+
         img.onload = () => {
+            URL.revokeObjectURL(objectUrl); // Clean up memory
+
             const minWidth = 64;
             const minHeight = 64;
-            const maxWidth = 2048;
-            const maxHeight = 2048;
 
             if (img.width < minWidth || img.height < minHeight) {
                 resolve({
                     isValid: false,
                     error: `Image dimensions too small. Minimum: ${minWidth}x${minHeight}px, Current: ${img.width}x${img.height}px`
                 });
-            } else if (img.width > maxWidth || img.height > maxHeight) {
-                resolve({
-                    isValid: false,
-                    error: `Image dimensions too large. Maximum: ${maxWidth}x${maxHeight}px, Current: ${img.width}x${img.height}px`
-                });
             } else {
                 resolve({ isValid: true });
             }
         };
+
         img.onerror = () => {
+            URL.revokeObjectURL(objectUrl); // Clean up memory
             resolve({
                 isValid: false,
                 error: 'Invalid image file or corrupted image'
             });
         };
-        img.src = URL.createObjectURL(file);
+
+        img.src = objectUrl;
     });
 };
 
@@ -141,7 +139,7 @@ export default function ProjectForm() {
         'Dexscreener, icon, site, and contract filled',
     ];
 
-    // Updated handleLogoChange function with enhanced validation
+    // Simplified handleLogoChange function
     const handleLogoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -375,7 +373,7 @@ export default function ProjectForm() {
 
                     <Box component="form" onSubmit={handleSubmit(onSubmit)}>
                         <Grid container spacing={3}>
-                            {/* Logo Upload Section with Enhanced Validation */}
+                            {/* Logo Upload Section - Simplified Validation */}
                             <Grid size={{ xs: 12 }}>
                                 <Typography variant="h6" sx={{ color: '#FFD700', mb: 2, fontWeight: 'bold' }}>
                                     Project Logo
@@ -441,13 +439,10 @@ export default function ProjectForm() {
                                         • Supported formats: JPEG, PNG, GIF, WebP, SVG
                                     </Typography>
                                     <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
-                                        • Maximum file size: 5MB
+                                        • Minimum dimensions: 64x64px (for raster images)
                                     </Typography>
                                     <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
-                                        • Recommended dimensions: 256x256px to 512x512px
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
-                                        • Square aspect ratio works best
+                                        • Square aspect ratio recommended
                                     </Typography>
                                 </Box>
                                 {logoFile && (
@@ -694,7 +689,7 @@ export default function ProjectForm() {
                                             }
                                         }}
                                     >
-                                        <Add color='primary' />
+                                        <Add />
                                     </IconButton>
                                 </Box>
                                 {teamMembers.map((member, index) => (

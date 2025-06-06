@@ -31,36 +31,16 @@ import {
     ThumbUpOutlined,
 } from '@mui/icons-material';
 import { databases, DATABASE_ID, PROJECTS_COLLECTION_ID } from '@/lib/appwrite';
+import { useParams } from 'next/navigation';
+import { Project } from '@/lib/types';
 
-interface Project {
-    $id: string;
-    name: string;
-    ticker: string;
-    pitch: string;
-    description: string;
-    website: string;
-    github?: string;
-    twitter: string;
-    category: string;
-    status: string;
-    launchDate?: string;
-    logoUrl?: string;
-    totalStaked: number;
-    believers: number;
-    reviews: number;
-    bobScore: number;
-    estimatedReturn: number;
-    upvotedBy: string[]; // Array of user IDs who upvoted
-    teamMembers: string[]; // Array of team member strings
-    createdAt: string;
-}
+
 
 export default function ProjectDetailsPage({
-    params
+
 }: {
-    params: { id: string }
-}) {
-    const { id } = params;
+    }) {
+    const { id } = useParams<{ id: string }>();
     const [project, setProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -70,7 +50,7 @@ export default function ProjectDetailsPage({
 
     // TODO: Get actual user ID from authentication
     const currentUserId = 'user_123';
-    const isUpvoted = project?.upvotedBy.includes(currentUserId) || false;
+    const isupvotes = project?.upvotes.includes(currentUserId) || false;
 
     // Fetch project data
     useEffect(() => {
@@ -112,12 +92,12 @@ export default function ProjectDetailsPage({
     const handleUpvote = async () => {
         if (!project) return;
 
-        const newUpvotedBy = isUpvoted
-            ? project.upvotedBy.filter(id => id !== currentUserId)
-            : [...project.upvotedBy, currentUserId];
+        const newupvotes = isupvotes
+            ? project.upvotes.filter(id => id !== currentUserId)
+            : [...project.upvotes, currentUserId];
 
         // Update local state immediately for better UX
-        setProject({ ...project, upvotedBy: newUpvotedBy });
+        setProject({ ...project, upvotes: newupvotes });
 
         // Update in database
         try {
@@ -125,12 +105,12 @@ export default function ProjectDetailsPage({
                 DATABASE_ID,
                 PROJECTS_COLLECTION_ID,
                 project.$id,
-                { upvotedBy: newUpvotedBy }
+                { upvotes: newupvotes }
             );
         } catch (error) {
             console.error('Failed to update upvote:', error);
             // Revert local state on error
-            setProject({ ...project, upvotedBy: project.upvotedBy });
+            setProject({ ...project, upvotes: project.upvotes });
         }
     };
 
@@ -285,13 +265,13 @@ export default function ProjectDetailsPage({
                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                         <Button
                                             variant="contained"
-                                            startIcon={isUpvoted ? <ThumbUp /> : <ThumbUpOutlined />}
+                                            startIcon={isupvotes ? <ThumbUp /> : <ThumbUpOutlined />}
                                             onClick={handleUpvote}
                                             sx={{
-                                                background: isUpvoted
+                                                background: isupvotes
                                                     ? 'linear-gradient(45deg, #00E676, #00C853)'
                                                     : 'linear-gradient(45deg, #333, #555)',
-                                                color: isUpvoted ? '#000' : '#FFF',
+                                                color: isupvotes ? '#000' : '#FFF',
                                                 fontWeight: 'bold',
                                                 '&:hover': {
                                                     background: 'linear-gradient(45deg, #00E676, #00C853)',
@@ -299,7 +279,7 @@ export default function ProjectDetailsPage({
                                                 }
                                             }}
                                         >
-                                            Upvote ({formatNumber(project.upvotedBy?.length || 0)})
+                                            Upvote ({formatNumber(project.upvotes?.length || 0)})
                                         </Button>
                                         <Button
                                             variant="outlined"
@@ -328,7 +308,7 @@ export default function ProjectDetailsPage({
                                         <Box sx={{ textAlign: 'center' }}>
                                             <ThumbUp sx={{ color: '#00E676', mb: 1, fontSize: '2rem' }} />
                                             <Typography variant="h6" sx={{ color: '#00E676', fontWeight: 'bold' }}>
-                                                {formatNumber(project.upvotedBy?.length || 0)}
+                                                {formatNumber(project.upvotes?.length || 0)}
                                             </Typography>
                                             <Typography variant="body2" sx={{ color: '#888' }}>
                                                 Upvotes

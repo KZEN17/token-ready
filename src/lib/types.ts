@@ -1,26 +1,24 @@
 export interface Project {
-    $id?: string;
+    $id: string;
     name: string;
     ticker: string;
+    pitch: string;
     description: string;
     website: string;
     github?: string;
     twitter: string;
     category: string;
-    status: 'pending' | 'live' | 'ended';
-    launchDate?: string; // Will be stored as datetime in Appwrite
-    logoUrl?: string; // New field for project logo
-    teamMembers?: string[]; // Changed to string array
-    whitepaper?: string; // New field for whitepaper/docs
-    requestTwitterSpace?: boolean; // New field for Twitter Space request
+    status: string;
+    launchDate?: string;
+    logoUrl?: string;
     totalStaked: number;
     believers: number;
     reviews: number;
     bobScore: number;
     estimatedReturn: number;
-    simulatedInvestment: number;
-    createdAt: string; // Will be stored as datetime in Appwrite
-    updatedAt: string; // Will be stored as datetime in Appwrite
+    upvotes: string[]; // Array of user IDs who upvoted
+    teamMembers: string[]; // Array of team member strings
+    createdAt: string;
 }
 
 export interface Review {
