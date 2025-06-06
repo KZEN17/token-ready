@@ -1,24 +1,35 @@
 'use client';
 
 import ProjectForm from '@/components/projects/ProjectForm';
-import { Container, Typography, Box } from '@mui/material';
+import { Container, Typography, Box, Stack } from '@mui/material';
 
 export default function SubmitPage() {
     return (
         <Container maxWidth="md" sx={{ py: 4 }}>
-            <Typography
-                variant="h2"
-                sx={{
-                    mb: 2,
-                    textAlign: 'center',
-                    background: 'linear-gradient(135deg, #ffffff 0%, #00ff88 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                }}
-            >
-                🚀 Submit Your Project to TokenReady
-            </Typography>
+            <Stack direction='row' spacing={2} justifyContent='center' alignItems='center' sx={{ mb: 2 }}>
+                <Typography
+                    variant="h2"
+                    sx={{
+                        mb: 2,
+                        textAlign: 'center',
+                    }}
+                >
+                    🚀
+                </Typography>
+                <Typography
+                    variant="h2"
+                    sx={{
+                        mb: 2,
+                        textAlign: 'center',
+                        background: 'linear-gradient(135deg, #ffffff 0%, #f59e0b 100%)',
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                    }}
+                >
+                    Submit Your Project to TokenReady
+                </Typography>
+            </Stack>
 
             <Typography
                 variant="h6"
