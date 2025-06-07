@@ -21,7 +21,7 @@ import {
     FavoriteBorder,
     Launch,
     GitHub,
-    Twitter,
+    X,
     RateReview,
     Star,
     People,
@@ -369,45 +369,45 @@ export default function ProjectCard({
                             Review
                         </Button>
                         <IconButton
-                            size="small"
+                            size="medium"
                             href={`https://twitter.com/${project.twitter.replace('@', '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
                             component="a"
                             sx={{
-                                backgroundColor: alpha('#1DA1F2', 0.1),
-                                color: '#1DA1F2',
-                                border: '1px solid #1DA1F2',
+                                backgroundColor: '#000',
+                                color: '#000',
+                                border: '1px solid #000',
                                 '&:hover': {
-                                    backgroundColor: '#1DA1F2',
+                                    backgroundColor: '#000',
                                     color: 'white',
                                     transform: 'translateY(-1px)',
                                 }
                             }}
                         >
-                            <Twitter sx={{ fontSize: '1.2rem' }} />
+                            <X sx={{ fontSize: '1rem', color: '#FFF' }} />
                         </IconButton>
                         {project.github && (
                             <IconButton
-                                size="small"
+                                size="medium"
                                 href={project.github}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
                                 component="a"
                                 sx={{
-                                    backgroundColor: alpha('#666', 0.1),
-                                    color: '#666',
-                                    border: '1px solid #666',
+                                    backgroundColor: '#000',
+                                    color: '#000',
+                                    border: '1px solid #000',
                                     '&:hover': {
-                                        backgroundColor: '#666',
+                                        backgroundColor: '#000',
                                         color: 'white',
                                         transform: 'translateY(-1px)',
                                     }
                                 }}
                             >
-                                <GitHub sx={{ fontSize: '1.2rem' }} />
+                                <GitHub sx={{ fontSize: '1.2rem', color: '#FFF' }} />
                             </IconButton>
                         )}
                     </Stack>

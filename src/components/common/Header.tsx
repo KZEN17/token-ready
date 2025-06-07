@@ -118,8 +118,6 @@ export default function Header() {
                             size="small"
                             sx={{
                                 color: theme.palette.primary.main,
-                                backgroundColor: 'rgba(0, 255, 136, 0.05)',
-                                border: '1px solid rgba(0, 255, 136, 0.2)',
                                 borderRadius: 2,
                                 '&:hover': {
                                     backgroundColor: 'rgba(0, 255, 136, 0.15)',
@@ -136,8 +134,6 @@ export default function Header() {
                             size="small"
                             sx={{
                                 color: 'primary.main',
-                                backgroundColor: 'rgba(0, 255, 136, 0.05)',
-                                border: '1px solid rgba(0, 255, 136, 0.2)',
                                 borderRadius: 2,
                                 '&:hover': {
                                     backgroundColor: 'rgba(0, 255, 136, 0.15)',
@@ -154,8 +150,6 @@ export default function Header() {
                             size="small"
                             sx={{
                                 color: 'primary.main',
-                                backgroundColor: 'rgba(0, 255, 136, 0.05)',
-                                border: '1px solid rgba(0, 255, 136, 0.2)',
                                 borderRadius: 2,
                                 '&:hover': {
                                     backgroundColor: 'rgba(0, 255, 136, 0.15)',
@@ -235,25 +229,28 @@ export default function Header() {
                                 Staking
                             </Button>
                         </Link>
-                        <Button
-                            color="inherit"
-                            sx={{
-                                mx: 1,
-                                fontSize: '0.875rem',
-                                fontWeight: 600,
-                                color: 'rgba(255, 255, 255, 0.9)',
-                                borderRadius: 2,
-                                px: 2,
-                                py: 1,
-                                '&:hover': {
-                                    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-                                    color: theme.palette.primary.main,
-                                    transform: 'translateY(-1px)',
-                                },
-                            }}
-                        >
-                            Leaderboard
-                        </Button>
+                        <Link href="/leaderboard" passHref>
+                            <Button
+                                color="inherit"
+                                sx={{
+                                    mx: 1,
+                                    fontSize: '0.875rem',
+                                    fontWeight: 600,
+                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    borderRadius: 2,
+                                    px: 2,
+                                    py: 1,
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                                        color: theme.palette.primary.main,
+                                        transform: 'translateY(-1px)',
+                                    },
+                                }}
+
+                            >
+                                Leaderboard
+                            </Button>
+                        </Link>
                     </Box>
 
                     {/* Authentication Section */}

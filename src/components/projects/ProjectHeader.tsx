@@ -15,7 +15,7 @@ import {
     ThumbUp,
     Launch,
     GitHub,
-    Twitter,
+    X,
     Star,
     ThumbUpOutlined,
     People,
@@ -266,7 +266,7 @@ export default function ProjectHeader({
                             href={project.github}
                             target="_blank"
                             sx={{
-                                borderColor: '#666',
+                                borderColor: '#000',
                                 color: '#666',
                                 '&:hover': {
                                     backgroundColor: alpha('#666', 0.1),
@@ -279,19 +279,25 @@ export default function ProjectHeader({
                     )}
                     <Button
                         variant="outlined"
-                        startIcon={<Twitter />}
+                        startIcon={null}
                         href={`https://twitter.com/${project.twitter.replace('@', '')}`}
                         target="_blank"
                         sx={{
-                            borderColor: '#1DA1F2',
-                            color: '#1DA1F2',
+                            textAlign: 'center',
+                            borderColor: '#000',
+                            backgroundColor: '#000',
+                            justifyContent: 'center',
+                            alignContent: 'center',
+                            color: '#fff',
+                            minWidth: '70px',
+                            padding: '6px 0',
                             '&:hover': {
-                                backgroundColor: alpha('#1DA1F2', 0.1),
-                                borderColor: '#1DA1F2'
+                                backgroundColor: '#000',
+                                borderColor: '#fff'
                             }
                         }}
                     >
-                        Twitter
+                        <X fontSize='medium' />
                     </Button>
                 </Box>
             </CardContent>
