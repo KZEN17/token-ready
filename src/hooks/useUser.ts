@@ -178,12 +178,12 @@ export const useUser = () => {
                         twitterPfp: twitterAccount?.profilePictureUrl || '',
 
                         // Fields with defaults
-                        walletAddress: walletAddress || '',
+                        walletAddress: '',
                         bobPoints: 0,
                         totalStaked: 0,
                         reviewsCount: 0,
                         projectsSupported: 0,
-                        isVerifiedKOL: (twitterAccount?.followersCount || 0) > 1000,
+                        isVerifiedKOL: false,
 
                         // Legacy field
                         createdAt: now,
