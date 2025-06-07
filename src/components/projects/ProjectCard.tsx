@@ -8,183 +8,397 @@ import {
     Chip,
     Button,
     Avatar,
-    Divider,
+    IconButton,
+    Stack,
+    Grid,
+    alpha,
 } from '@mui/material';
 import {
-    People,
-    Star,
     ThumbUp,
+    ThumbUpOutlined,
+    Favorite,
+    FavoriteBorder,
+    Launch,
+    GitHub,
+    Twitter,
+    RateReview,
+    Star,
+    People,
     AccountBalanceWallet,
 } from '@mui/icons-material';
-import { Project } from '../../lib/types';
+
+interface Project {
+    $id: string;
+    name: string;
+    ticker: string;
+    pitch: string;
+    description: string;
+    website: string;
+    github?: string;
+    twitter: string;
+    category: string;
+    status: string;
+    logoUrl?: string;
+    totalStaked: number;
+    believers: number;
+    reviews: number;
+    bobScore: number;
+    estimatedReturn: number;
+    upvotes: string[];
+    teamMembers: string[];
+}
 
 interface ProjectCardProps {
     project: Project;
-    onViewDetails?: (project: Project) => void;
-    onUpvote?: (projectId: string) => void;
-    onInvest?: (projectId: string) => void;
+    currentUserId: string;
+    isFavorited: boolean;
+    onCardClick: (projectId: string) => void;
+    onUpvote: (projectId: string) => void;
+    onToggleFavorite: (projectId: string) => void;
+    onReview: (projectId: string) => void;
 }
 
 export default function ProjectCard({
     project,
-    onViewDetails,
+    currentUserId,
+    isFavorited,
+    onCardClick,
     onUpvote,
-    onInvest,
+    onToggleFavorite,
+    onReview,
 }: ProjectCardProps) {
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'live':
-                return 'success';
-            case 'pending':
-                return 'warning';
-            case 'ended':
-                return 'error';
-            default:
-                return 'default';
+            case 'approved': return '#00ff88';
+            case 'pending': return '#ffa726';
+            case 'rejected': return '#ff6b6b';
+            default: return '#757575';
         }
     };
 
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'live':
-                return 'Community Heat';
-            case 'pending':
-                return 'Initial Funding';
-            case 'ended':
-                return 'Verified';
-            default:
-                return status;
-        }
+    const formatNumber = (num: number) => {
+        if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+        if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+        return num.toString();
     };
+
+    const isUpvoted = project.upvotes.includes(currentUserId);
 
     return (
         <Card
             sx={{
                 height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                background: 'rgba(255, 255, 255, 0.05)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(0, 255, 136, 0.1)',
-                transition: 'all 0.3s ease',
+                background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
+                border: '1px solid #333',
+                borderRadius: 3,
+                overflow: 'hidden',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                cursor: 'pointer',
                 '&:hover': {
-                    border: '1px solid rgba(0, 255, 136, 0.3)',
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 8px 32px rgba(0, 255, 136, 0.2)',
-                },
+                    transform: 'translateY(-8px)',
+                    boxShadow: `0 20px 40px ${alpha('#00ff88', 0.15)}`,
+                    borderColor: '#00ff88',
+                }
             }}
+            onClick={() => onCardClick(project.$id)}
         >
-            <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            {/* Status Indicator */}
+            <Box
+                sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 4,
+                    background: getStatusColor(project.status),
+                }}
+            />
+
+            <CardContent sx={{ p: 3 }}>
+                {/* Header */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar
+                            src={project.logoUrl || undefined}
                             sx={{
-                                width: 48,
-                                height: 48,
-                                backgroundColor: 'primary.main',
-                                color: 'black',
-                                fontWeight: 700,
+                                width: 56,
+                                height: 56,
+                                background: 'linear-gradient(45deg, #00ff88, #4dffb0)',
+                                color: '#000',
+                                fontSize: '1.5rem',
+                                fontWeight: 'bold',
+                                border: '2px solid #333'
                             }}
                         >
                             {project.name.charAt(0)}
                         </Avatar>
                         <Box>
-                            <Typography variant="h6" color="primary.main" fontWeight={600}>
+                            <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', mb: 0.5 }}>
                                 {project.name}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                ${project.ticker}
+                            <Typography
+                                variant="body1"
+                                sx={{
+                                    color: '#00ff88',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                {project.ticker}
                             </Typography>
                         </Box>
                     </Box>
-                    <Chip
-                        label={getStatusLabel(project.status)}
-                        size="small"
-                        color={getStatusColor(project.status) as 'success' | 'warning' | 'error' | 'default'}
-                        sx={{ fontSize: '0.75rem' }}
-                    />
+                    <Stack direction="row" spacing={1}>
+                        <IconButton
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onUpvote(project.$id);
+                            }}
+                            sx={{
+                                color: isUpvoted ? '#00ff88' : '#666',
+                                '&:hover': {
+                                    color: '#00ff88',
+                                    transform: 'scale(1.1)',
+                                }
+                            }}
+                        >
+                            {isUpvoted ? <ThumbUp /> : <ThumbUpOutlined />}
+                        </IconButton>
+                        <IconButton
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onToggleFavorite(project.$id);
+                            }}
+                            sx={{
+                                color: isFavorited ? '#ff6b6b' : '#666',
+                                '&:hover': {
+                                    color: '#ff6b6b',
+                                    transform: 'scale(1.1)',
+                                }
+                            }}
+                        >
+                            {isFavorited ? <Favorite /> : <FavoriteBorder />}
+                        </IconButton>
+                    </Stack>
                 </Box>
 
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 3, flexGrow: 1, lineHeight: 1.5 }}
-                >
-                    {project.description}
-                </Typography>
-
-                <Box sx={{ mb: 3 }}>
+                {/* Status and Category */}
+                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                    <Chip
+                        label={project.status}
+                        size="small"
+                        sx={{
+                            backgroundColor: alpha(getStatusColor(project.status), 0.2),
+                            color: getStatusColor(project.status),
+                            border: `1px solid ${getStatusColor(project.status)}`,
+                            fontWeight: 'bold',
+                            textTransform: 'uppercase',
+                            fontSize: '0.7rem'
+                        }}
+                    />
                     <Chip
                         label={project.category}
                         size="small"
-                        variant="outlined"
-                        sx={{ borderColor: 'primary.main', color: 'primary.main' }}
+                        sx={{
+                            backgroundColor: alpha('#00ff88', 0.1),
+                            color: '#00ff88',
+                            border: '1px solid #00ff88',
+                            fontWeight: 'bold'
+                        }}
                     />
-                </Box>
+                </Stack>
 
-                <Divider sx={{ mb: 2, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+                {/* Pitch */}
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: '#b0b0b0',
+                        mb: 2,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        lineHeight: 1.5,
+                        height: '4.5em'
+                    }}
+                >
+                    {project.pitch}
+                </Typography>
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <People fontSize="small" color="primary" />
-                        <Typography variant="body2">
-                            Believers: {project.believers}
+                {/* Team Members Preview */}
+                {project.teamMembers && project.teamMembers.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" sx={{ color: '#00ff88', fontWeight: 'bold', display: 'block', mb: 1 }}>
+                            Team ({project.teamMembers.length} members)
+                        </Typography>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: '#888',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 1,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden'
+                            }}
+                        >
+                            {project.teamMembers.slice(0, 2).join(' • ')}
+                            {project.teamMembers.length > 2 && ' • ...'}
                         </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Star fontSize="small" color="secondary" />
-                        <Typography variant="body2">
-                            Reviews: {project.reviews}
-                        </Typography>
-                    </Box>
-                </Box>
+                )}
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <AccountBalanceWallet fontSize="small" />
-                        <Typography variant="body2" color="text.secondary">
-                            Simulated: ${project.simulatedInvestment.toLocaleString()}
-                        </Typography>
-                    </Box>
-                    <Typography variant="body2" color="primary.main" fontWeight={600}>
-                        BOB Score: {project.bobScore}
-                    </Typography>
-                </Box>
+                {/* Stats Grid */}
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                    <Grid size={{ xs: 3 }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
+                                <ThumbUp sx={{ color: '#00ff88', fontSize: '1rem', mr: 0.5 }} />
+                                <Typography variant="h6" sx={{ color: '#00ff88', fontWeight: 'bold' }}>
+                                    {formatNumber(project.upvotes?.length || 0)}
+                                </Typography>
+                            </Box>
+                            <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
+                                Upvotes
+                            </Typography>
+                        </Box>
+                    </Grid>
+                    <Grid size={{ xs: 3 }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
+                                <Star sx={{ color: '#ffa726', fontSize: '1rem', mr: 0.5 }} />
+                                <Typography variant="h6" sx={{ color: '#ffa726', fontWeight: 'bold' }}>
+                                    {project.bobScore || '-'}
+                                </Typography>
+                            </Box>
+                            <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
+                                BOB Score
+                            </Typography>
+                        </Box>
+                    </Grid>
+                    <Grid size={{ xs: 3 }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
+                                <People sx={{ color: '#ff6b6b', fontSize: '1rem', mr: 0.5 }} />
+                                <Typography variant="h6" sx={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+                                    {formatNumber(project.believers)}
+                                </Typography>
+                            </Box>
+                            <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
+                                Believers
+                            </Typography>
+                        </Box>
+                    </Grid>
+                    <Grid size={{ xs: 3 }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
+                                <AccountBalanceWallet sx={{ color: '#00ff88', fontSize: '1rem', mr: 0.5 }} />
+                                <Typography variant="h6" sx={{ color: '#00ff88', fontWeight: 'bold' }}>
+                                    {formatNumber(project.totalStaked)}
+                                </Typography>
+                            </Box>
+                            <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
+                                Staked
+                            </Typography>
+                        </Box>
+                    </Grid>
+                </Grid>
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Typography variant="body2" color="secondary.main" fontWeight={600}>
-                        Est. Return: {project.estimatedReturn}%
-                    </Typography>
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 1, mt: 'auto' }}>
+                {/* Action Buttons */}
+                <Stack direction="row" spacing={1}>
+                    <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<Launch sx={{ fontSize: '1rem' }} />}
+                        href={project.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        component="a"
+                        sx={{
+                            flex: 1,
+                            background: 'linear-gradient(45deg, #00ff88, #4dffb0)',
+                            color: '#000',
+                            fontWeight: 'bold',
+                            fontSize: '0.8rem',
+                            py: 1,
+                            '&:hover': {
+                                background: 'linear-gradient(45deg, #4dffb0, #00ff88)',
+                                transform: 'translateY(-1px)',
+                                boxShadow: '0 4px 12px rgba(0, 255, 136, 0.3)',
+                            }
+                        }}
+                    >
+                        Website
+                    </Button>
                     <Button
                         variant="outlined"
                         size="small"
-                        onClick={() => onViewDetails?.(project)}
-                        sx={{ flex: 1 }}
-                    >
-                        Project Details
-                    </Button>
-                    <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<ThumbUp />}
-                        onClick={() => onUpvote?.(project.$id!)}
-                        sx={{ minWidth: 'auto' }}
-                    >
-                        Upvote
-                    </Button>
-                    <Button
-                        variant="contained"
-                        size="small"
-                        color="secondary"
-                        onClick={() => onInvest?.(project.$id!)}
-                        sx={{ minWidth: 'auto' }}
+                        startIcon={<RateReview sx={{ fontSize: '1rem' }} />}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onReview(project.$id);
+                        }}
+                        sx={{
+                            borderColor: '#ff6b6b',
+                            color: '#ff6b6b',
+                            fontWeight: 'bold',
+                            fontSize: '0.8rem',
+                            py: 1,
+                            '&:hover': {
+                                backgroundColor: alpha('#ff6b6b', 0.1),
+                                borderColor: '#ff6b6b',
+                                transform: 'translateY(-1px)',
+                            }
+                        }}
                     >
                         Review
                     </Button>
-                </Box>
+                    <IconButton
+                        size="small"
+                        href={`https://twitter.com/${project.twitter.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        component="a"
+                        sx={{
+                            backgroundColor: alpha('#1DA1F2', 0.1),
+                            color: '#1DA1F2',
+                            border: '1px solid #1DA1F2',
+                            '&:hover': {
+                                backgroundColor: '#1DA1F2',
+                                color: 'white',
+                                transform: 'translateY(-1px)',
+                            }
+                        }}
+                    >
+                        <Twitter sx={{ fontSize: '1.2rem' }} />
+                    </IconButton>
+                    {project.github && (
+                        <IconButton
+                            size="small"
+                            href={project.github}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            component="a"
+                            sx={{
+                                backgroundColor: alpha('#666', 0.1),
+                                color: '#666',
+                                border: '1px solid #666',
+                                '&:hover': {
+                                    backgroundColor: '#666',
+                                    color: 'white',
+                                    transform: 'translateY(-1px)',
+                                }
+                            }}
+                        >
+                            <GitHub sx={{ fontSize: '1.2rem' }} />
+                        </IconButton>
+                    )}
+                </Stack>
             </CardContent>
         </Card>
     );
