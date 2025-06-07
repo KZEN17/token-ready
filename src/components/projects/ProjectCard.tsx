@@ -69,9 +69,9 @@ export default function ProjectCard({
 }: ProjectCardProps) {
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'approved': return '#00ff88';
+            case 'live': return '#00ff88';
             case 'pending': return '#ffa726';
-            case 'rejected': return '#ff6b6b';
+            case 'ended': return '#ff6b6b';
             default: return '#757575';
         }
     };

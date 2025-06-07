@@ -1,6 +1,7 @@
 'use client';
 
 import ProjectForm from '@/components/projects/ProjectForm';
+import { theme } from '@/lib/theme';
 import { Container, Typography, Box, Stack } from '@mui/material';
 
 export default function SubmitPage() {
@@ -21,7 +22,7 @@ export default function SubmitPage() {
                     sx={{
                         mb: 2,
                         textAlign: 'center',
-                        background: 'linear-gradient(135deg, #ffffff 0%, #f59e0b 100%)',
+                        background: `linear-gradient(135deg, #ffffff 0%,${theme.palette.primary.main}  100%)`,
                         backgroundClip: 'text',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
