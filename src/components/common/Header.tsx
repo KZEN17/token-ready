@@ -1,3 +1,4 @@
+// src/components/common/Header.tsx
 'use client';
 
 import {
@@ -76,7 +77,15 @@ export default function Header() {
     // Show loading state while Privy is initializing
     if (!ready) {
         return (
-            <AppBar position="sticky">
+            <AppBar
+                position="sticky"
+                sx={{
+                    background: 'linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #111111 100%)',
+                    backdropFilter: 'blur(20px)',
+                    borderBottom: '1px solid rgba(0, 255, 136, 0.1)',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
+                }}
+            >
                 <Container maxWidth="xl">
                     <Toolbar disableGutters>
                         <Logo size="medium" />
@@ -89,7 +98,15 @@ export default function Header() {
     }
 
     return (
-        <AppBar position="sticky">
+        <AppBar
+            position="sticky"
+            sx={{
+                background: 'linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #111111 100%)',
+                backdropFilter: 'blur(20px)',
+                borderBottom: '1px solid rgba(0, 255, 136, 0.1)',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
+            }}
+        >
             <Container maxWidth="xl">
                 <Toolbar disableGutters>
                     {/* Logo */}
@@ -101,8 +118,13 @@ export default function Header() {
                             size="small"
                             sx={{
                                 color: theme.palette.primary.main,
+                                backgroundColor: 'rgba(0, 255, 136, 0.05)',
+                                border: '1px solid rgba(0, 255, 136, 0.2)',
+                                borderRadius: 2,
                                 '&:hover': {
-                                    backgroundColor: `${theme.palette.primary.main}15`,
+                                    backgroundColor: 'rgba(0, 255, 136, 0.15)',
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: '0 4px 12px rgba(0, 255, 136, 0.2)',
                                 },
                             }}
                             href="https://x.com/tokenready"
@@ -114,8 +136,13 @@ export default function Header() {
                             size="small"
                             sx={{
                                 color: 'primary.main',
+                                backgroundColor: 'rgba(0, 255, 136, 0.05)',
+                                border: '1px solid rgba(0, 255, 136, 0.2)',
+                                borderRadius: 2,
                                 '&:hover': {
-                                    backgroundColor: `${theme.palette.primary.main}15`,
+                                    backgroundColor: 'rgba(0, 255, 136, 0.15)',
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: '0 4px 12px rgba(0, 255, 136, 0.2)',
                                 },
                             }}
                             href="https://t.me/tokenready"
@@ -127,8 +154,13 @@ export default function Header() {
                             size="small"
                             sx={{
                                 color: 'primary.main',
+                                backgroundColor: 'rgba(0, 255, 136, 0.05)',
+                                border: '1px solid rgba(0, 255, 136, 0.2)',
+                                borderRadius: 2,
                                 '&:hover': {
-                                    backgroundColor: `${theme.palette.primary.main}15`,
+                                    backgroundColor: 'rgba(0, 255, 136, 0.15)',
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: '0 4px 12px rgba(0, 255, 136, 0.2)',
                                 },
                             }}
                             href="https://docs.tokenready.io"
@@ -146,9 +178,15 @@ export default function Header() {
                                 sx={{
                                     mx: 1,
                                     fontSize: '0.875rem',
-                                    color: 'text.primary',
+                                    fontWeight: 600,
+                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    borderRadius: 2,
+                                    px: 2,
+                                    py: 1,
                                     '&:hover': {
-                                        backgroundColor: `${theme.palette.primary.main}08`,
+                                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                                        color: theme.palette.primary.main,
+                                        transform: 'translateY(-1px)',
                                     },
                                 }}
                             >
@@ -161,9 +199,15 @@ export default function Header() {
                                 sx={{
                                     mx: 1,
                                     fontSize: '0.875rem',
-                                    color: 'text.primary',
+                                    fontWeight: 600,
+                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    borderRadius: 2,
+                                    px: 2,
+                                    py: 1,
                                     '&:hover': {
-                                        backgroundColor: `${theme.palette.primary.main}08`,
+                                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                                        color: theme.palette.primary.main,
+                                        transform: 'translateY(-1px)',
                                     },
                                 }}
                             >
@@ -176,9 +220,15 @@ export default function Header() {
                                 sx={{
                                     mx: 1,
                                     fontSize: '0.875rem',
-                                    color: 'text.primary',
+                                    fontWeight: 600,
+                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    borderRadius: 2,
+                                    px: 2,
+                                    py: 1,
                                     '&:hover': {
-                                        backgroundColor: `${theme.palette.primary.main}08`,
+                                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                                        color: theme.palette.primary.main,
+                                        transform: 'translateY(-1px)',
                                     },
                                 }}
                             >
@@ -190,9 +240,15 @@ export default function Header() {
                             sx={{
                                 mx: 1,
                                 fontSize: '0.875rem',
-                                color: 'text.primary',
+                                fontWeight: 600,
+                                color: 'rgba(255, 255, 255, 0.9)',
+                                borderRadius: 2,
+                                px: 2,
+                                py: 1,
                                 '&:hover': {
-                                    backgroundColor: `${theme.palette.primary.main}08`,
+                                    backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                                    color: theme.palette.primary.main,
+                                    transform: 'translateY(-1px)',
                                 },
                             }}
                         >
@@ -211,8 +267,22 @@ export default function Header() {
                                 startIcon={loading ? <CircularProgress size={16} /> : <X />}
                                 sx={{
                                     fontSize: { xs: '0.8rem', md: '0.875rem' },
-                                    color: '#fff',
-                                    background: '#000',
+                                    fontWeight: 600,
+                                    color: '#000',
+                                    background: 'linear-gradient(45deg, #00ff88, #4dffb0)',
+                                    border: 'none',
+                                    borderRadius: 2,
+                                    px: 3,
+                                    py: 1,
+                                    '&:hover': {
+                                        background: 'linear-gradient(45deg, #4dffb0, #00ff88)',
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 6px 20px rgba(0, 255, 136, 0.3)',
+                                    },
+                                    '&:disabled': {
+                                        background: 'rgba(255, 255, 255, 0.2)',
+                                        color: 'rgba(255, 255, 255, 0.5)',
+                                    }
                                 }}
                             >
                                 {loading ? 'Connecting...' : 'Login with X'}
@@ -231,6 +301,8 @@ export default function Header() {
                                         sx={{
                                             fontSize: { xs: '0.7rem', md: '0.75rem' },
                                             display: { xs: 'none', sm: 'flex' },
+                                            backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                                            border: '1px solid rgba(0, 255, 136, 0.3)',
                                         }}
                                     />
                                 ) : (
@@ -241,6 +313,8 @@ export default function Header() {
                                         sx={{
                                             fontSize: { xs: '0.7rem', md: '0.75rem' },
                                             display: { xs: 'none', sm: 'flex' },
+                                            borderColor: 'rgba(0, 255, 136, 0.5)',
+                                            color: theme.palette.primary.main,
                                         }}
                                     >
                                         Connect Wallet
@@ -255,15 +329,23 @@ export default function Header() {
                                             icon={<Stars />}
                                             label={`${user?.bobPoints || 0} BOB`}
                                             size="small"
-                                            color="primary"
-                                            sx={{ fontSize: '0.75rem' }}
+                                            sx={{
+                                                fontSize: '0.75rem',
+                                                backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                                                color: theme.palette.primary.main,
+                                                border: '1px solid rgba(0, 255, 136, 0.3)',
+                                            }}
                                         />
                                         <Chip
                                             icon={<TrendingUp />}
                                             label={`${user?.believerPoints || 0} BP`}
                                             size="small"
-                                            color="secondary"
-                                            sx={{ fontSize: '0.75rem' }}
+                                            sx={{
+                                                fontSize: '0.75rem',
+                                                backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                                                color: theme.palette.secondary.main,
+                                                border: '1px solid rgba(255, 107, 107, 0.3)',
+                                            }}
                                         />
                                     </Box>
 
@@ -274,10 +356,12 @@ export default function Header() {
                                             alignItems: 'center',
                                             gap: 1,
                                             cursor: 'pointer',
-                                            p: 0.5,
+                                            p: 1,
                                             borderRadius: 2,
                                             '&:hover': {
-                                                backgroundColor: `${theme.palette.primary.main}15`,
+                                                backgroundColor: 'rgba(0, 255, 136, 0.15)',
+                                                transform: 'translateY(-1px)',
+                                                boxShadow: '0 4px 12px rgba(0, 255, 136, 0.2)',
                                             }
                                         }}
                                         onClick={handleMenuOpen}
@@ -291,24 +375,36 @@ export default function Header() {
                                                 color: '#000',
                                                 fontSize: '0.875rem',
                                                 fontWeight: 'bold',
+                                                border: '2px solid rgba(0, 255, 136, 0.3)',
                                             }}
                                         >
                                             {!userAvatar && (userDisplayName.charAt(0) || 'U')}
                                         </Avatar>
                                         <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                                            <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1 }}>
+                                            <Typography variant="body2" sx={{
+                                                fontWeight: 'bold',
+                                                lineHeight: 1,
+                                                color: 'rgba(255, 255, 255, 0.95)'
+                                            }}>
                                                 {userDisplayName}
                                                 {isKOL && (
                                                     <Chip
                                                         label="KOL"
                                                         size="small"
-                                                        color="secondary"
-                                                        sx={{ ml: 1, fontSize: '0.6rem', height: 16 }}
+                                                        sx={{
+                                                            ml: 1,
+                                                            fontSize: '0.6rem',
+                                                            height: 16,
+                                                            backgroundColor: 'rgba(255, 107, 107, 0.2)',
+                                                            color: theme.palette.secondary.main,
+                                                        }}
                                                     />
                                                 )}
                                             </Typography>
                                             {hasTwitter && (
-                                                <Typography variant="caption" color="text.secondary">
+                                                <Typography variant="caption" sx={{
+                                                    color: 'rgba(255, 255, 255, 0.6)'
+                                                }}>
                                                     @{user?.twitterHandle}
                                                 </Typography>
                                             )}
@@ -333,6 +429,10 @@ export default function Header() {
                                         '& .MuiPaper-root': {
                                             minWidth: 240,
                                             mt: 1.5,
+                                            background: 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)',
+                                            border: '1px solid rgba(0, 255, 136, 0.2)',
+                                            borderRadius: 2,
+                                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
                                         }
                                     }}
                                 >
@@ -344,8 +444,13 @@ export default function Header() {
                                                 <Chip
                                                     label="KOL"
                                                     size="small"
-                                                    color="secondary"
-                                                    sx={{ ml: 1, fontSize: '0.6rem', height: 16 }}
+                                                    sx={{
+                                                        ml: 1,
+                                                        fontSize: '0.6rem',
+                                                        height: 16,
+                                                        backgroundColor: 'rgba(255, 107, 107, 0.2)',
+                                                        color: theme.palette.secondary.main,
+                                                    }}
                                                 />
                                             )}
                                         </Typography>
@@ -361,60 +466,68 @@ export default function Header() {
                                                 icon={<Stars />}
                                                 label={`${user?.bobPoints || 0} BOB Points`}
                                                 size="small"
-                                                color="primary"
-                                                sx={{ fontSize: '0.7rem' }}
+                                                sx={{
+                                                    fontSize: '0.7rem',
+                                                    backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                                                    color: theme.palette.primary.main,
+                                                    border: '1px solid rgba(0, 255, 136, 0.3)',
+                                                }}
                                             />
                                             <Chip
                                                 icon={<TrendingUp />}
                                                 label={`${user?.believerPoints || 0} Believer Points`}
                                                 size="small"
-                                                color="secondary"
-                                                sx={{ fontSize: '0.7rem' }}
+                                                sx={{
+                                                    fontSize: '0.7rem',
+                                                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                                                    color: theme.palette.secondary.main,
+                                                    border: '1px solid rgba(255, 107, 107, 0.3)',
+                                                }}
                                             />
                                         </Box>
                                     </Box>
 
-                                    <Divider />
+                                    <Divider sx={{ borderColor: 'rgba(0, 255, 136, 0.1)' }} />
 
                                     {/* Menu Items */}
-                                    <MenuItem onClick={handleMenuClose}>
-                                        <AccountBox sx={{ mr: 2 }} />
+                                    <MenuItem onClick={handleMenuClose} sx={{ '&:hover': { backgroundColor: 'rgba(0, 255, 136, 0.1)' } }}>
+                                        <AccountBox sx={{ mr: 2, color: theme.palette.primary.main }} />
                                         Profile
                                     </MenuItem>
-                                    <MenuItem onClick={handleMenuClose}>
-                                        <Stars sx={{ mr: 2 }} />
+                                    <MenuItem onClick={handleMenuClose} sx={{ '&:hover': { backgroundColor: 'rgba(0, 255, 136, 0.1)' } }}>
+                                        <Stars sx={{ mr: 2, color: theme.palette.primary.main }} />
                                         My Reviews ({user?.reviewsCount || 0})
                                     </MenuItem>
-                                    <MenuItem onClick={handleMenuClose}>
-                                        <TrendingUp sx={{ mr: 2 }} />
+                                    <MenuItem onClick={handleMenuClose} sx={{ '&:hover': { backgroundColor: 'rgba(0, 255, 136, 0.1)' } }}>
+                                        <TrendingUp sx={{ mr: 2, color: theme.palette.primary.main }} />
                                         My Projects ({user?.projectsSupported || 0})
                                     </MenuItem>
 
                                     {/* Connect X if not connected */}
                                     {!hasTwitter && (
-                                        <MenuItem onClick={() => { connectTwitter(); handleMenuClose(); }}>
-                                            <X sx={{ mr: 2 }} />
+                                        <MenuItem onClick={() => { connectTwitter(); handleMenuClose(); }} sx={{ '&:hover': { backgroundColor: 'rgba(0, 255, 136, 0.1)' } }}>
+                                            <X sx={{ mr: 2, color: theme.palette.primary.main }} />
                                             Connect X Account
                                         </MenuItem>
                                     )}
 
                                     {/* Connect Wallet if not connected */}
                                     {/* {!hasWallet && (
-                                        <MenuItem onClick={handleMenuClose}>
-                                            <AccountBalanceWallet sx={{ mr: 2 }} />
+                                        <MenuItem onClick={handleMenuClose} sx={{ '&:hover': { backgroundColor: 'rgba(0, 255, 136, 0.1)' } }}>
+                                            <AccountBalanceWallet sx={{ mr: 2, color: theme.palette.primary.main }} />
                                             Connect Wallet
                                         </MenuItem>
                                     )} */}
 
-                                    <MenuItem onClick={handleMenuClose}>
-                                        <Settings sx={{ mr: 2 }} />
+                                    <MenuItem onClick={handleMenuClose} sx={{ '&:hover': { backgroundColor: 'rgba(0, 255, 136, 0.1)' } }}>
+                                        <Settings sx={{ mr: 2, color: theme.palette.primary.main }} />
                                         Settings
                                     </MenuItem>
 
-                                    <Divider />
+                                    <Divider sx={{ borderColor: 'rgba(0, 255, 136, 0.1)' }} />
 
-                                    <MenuItem onClick={handleLogout}>
-                                        <Logout sx={{ mr: 2 }} />
+                                    <MenuItem onClick={handleLogout} sx={{ '&:hover': { backgroundColor: 'rgba(255, 107, 107, 0.1)' } }}>
+                                        <Logout sx={{ mr: 2, color: theme.palette.secondary.main }} />
                                         Logout
                                     </MenuItem>
                                 </Menu>
