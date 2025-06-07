@@ -124,7 +124,7 @@ export const useUser = () => {
                         updateData.followerCount = twitterAccount.followersCount || existingUser.followerCount;
                         updateData.verified = twitterAccount.verified || existingUser.verified;
 
-                        // Legacy fields for compatibility
+                        // Update compatibility fields
                         updateData.twitterHandle = twitterAccount.username || existingUser.twitterHandle;
                         updateData.twitterDisplayName = twitterAccount.name || existingUser.twitterDisplayName;
                         updateData.twitterPfp = twitterAccount.profilePictureUrl || existingUser.twitterPfp;
@@ -172,7 +172,7 @@ export const useUser = () => {
                         bio: '',
                         location: '',
 
-                        // Legacy compatibility fields
+                        // Compatibility fields  
                         twitterHandle: twitterAccount?.username || '',
                         twitterDisplayName: twitterAccount?.name || '',
                         twitterPfp: twitterAccount?.profilePictureUrl || '',

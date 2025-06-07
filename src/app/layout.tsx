@@ -7,6 +7,7 @@ import { theme } from '../lib/theme';
 
 import './globals.css';
 import Layout from '@/components/common/Layout';
+import PrivyAuthProvider from '@/components/auth/PrivyAuthProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,14 +24,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AppRouterCacheProvider>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <Layout>
-              {children}
-            </Layout>
-          </ThemeProvider>
-        </AppRouterCacheProvider>
+        <PrivyAuthProvider>
+          <AppRouterCacheProvider>
+            <ThemeProvider theme={theme}>
+              <CssBaseline />
+              <Layout>
+                {children}
+              </Layout>
+            </ThemeProvider>
+          </AppRouterCacheProvider>
+        </PrivyAuthProvider>
       </body>
     </html>
   );
