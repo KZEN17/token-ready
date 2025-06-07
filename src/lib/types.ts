@@ -1,327 +1,100 @@
-'use client';
-
-import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { useState, useEffect } from 'react';
-import { databases, DATABASE_ID, USERS_COLLECTION_ID } from '../lib/appwrite';
-import { ID, Query } from 'appwrite';
-
-interface User {
+// Updated User interface to match your Appwrite collection schema
+export interface User {
     $id: string;
 
-    // Core user info (required fields)
-    username: string;           // X username without @
-    displayName: string;        // X display name
-    profileImage: string;       // X profile picture URL
-    followerCount: number;      // X follower count
-    verified: boolean;          // X verification status
+    // Core user info
+    username: string;           // Required - X username without @
+    displayName: string;        // Required - X display name
+    profileImage: string;       // Required - X profile picture URL
+    followerCount: number;      // Required - X follower count
+    verified: boolean;          // Required - X verification status
 
-    // Points and ranking (required)
-    believerPoints: number;     // Believer points earned
-    believerRank: string;       // Rank based on believer points
+    // Points and ranking
+    believerPoints: number;     // Required - Believer points earned
+    believerRank: string;       // Required - Rank based on believer points
 
-    // Timestamps (required)
-    joinedAt: string;          // When user joined
-    lastActiveAt: string;      // Last activity
+    // Timestamps
+    joinedAt: string;          // Required - When user joined (ISO datetime)
+    lastActiveAt: string;      // Required - Last activity (ISO datetime)
 
     // Optional profile info
-    bio?: string;              // User bio
-    location?: string;         // User location
+    bio?: string;              // Optional - User bio
+    location?: string;         // Optional - User location
 
-    // Privy integration (required)
-    privyUserId: string;       // Link to Privy user ID
+    // Privy integration
+    privyUserId: string;       // Required - Link to Privy user ID
 
-    // Legacy/compatibility fields (optional)
-    twitterHandle?: string;
-    twitterDisplayName?: string;
-    twitterPfp?: string;
+    // Social accounts
+    twitterHandle?: string;    // Optional - X handle (redundant with username but keeping for compatibility)
+    twitterDisplayName?: string; // Optional - X display name (redundant but keeping)
+    twitterPfp?: string;       // Optional - X profile pic (redundant but keeping)
 
-    // Wallet and points (with defaults)
-    walletAddress?: string;
-    bobPoints: number;         // Default 0
-    totalStaked: number;       // Default 0
-    reviewsCount: number;      // Default 0
-    projectsSupported: number; // Default 0
-    isVerifiedKOL: boolean;    // Default false
+    // Wallet and staking
+    walletAddress?: string;    // Optional - Primary Solana wallet address
+    bobPoints: number;         // Integer with default 0 - BOB points
+    totalStaked: number;       // Integer with default 0 - Total staked amount
 
-    // Legacy field
-    createdAt: string;         // Maps to joinedAt
+    // Activity counters
+    reviewsCount: number;      // Integer with default 0 - Number of reviews
+    projectsSupported: number; // Integer with default 0 - Projects supported
+
+    // KOL status
+    isVerifiedKOL: boolean;    // Boolean with default false - KOL verification
+
+    // Legacy datetime fields (keeping for compatibility)
+    createdAt: string;         // Will map to joinedAt
 }
 
-// Helper function to calculate believer rank
-const calculateBelieverRank = (points: number): string => {
-    if (points >= 10000) return 'Legend';
-    if (points >= 5000) return 'Expert';
-    if (points >= 2500) return 'Veteran';
-    if (points >= 1000) return 'Advanced';
-    if (points >= 500) return 'Intermediate';
-    if (points >= 100) return 'Novice';
-    return 'Newcomer';
-};
 
-export const useUser = () => {
-    const {
-        user: privyUser,
-        authenticated,
-        ready,
-        login,
-        logout: privyLogout,
-        linkTwitter,
-        unlinkTwitter,
-    } = usePrivy();
+export interface Project {
+    $id: string;
+    name: string;
+    ticker: string;
+    pitch: string;
+    description: string;
+    website: string;
+    github?: string;
+    twitter: string;
+    category: string;
+    status: string;
+    launchDate?: string;
+    logoUrl?: string;
+    totalStaked: number;
+    believers: number;
+    reviews: number;
+    bobScore: number;
+    estimatedReturn: number;
+    simulatedInvestment: number;
+    upvotes: string[]; // Array of user IDs who upvoted
+    teamMembers: string[]; // Array of team member strings
+    createdAt: string;
+}
 
-    const { wallets } = useWallets();
+export interface Review {
+    $id?: string;
+    projectId: string;
+    userId: string;
+    rating: number;
+    comment: string;
+    investment: number;
+    believerPoints: number;
+    createdAt: string;
+}
 
-    const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+export interface StakingPool {
+    $id?: string;
+    totalValue: number;
+    apr: number;
+    activeProjects: number;
+    participants: number;
+}
 
-    // Get the primary Solana wallet
-    const solanaWallet = wallets.find(wallet => wallet.chainType === 'solana');
-    const walletAddress = solanaWallet?.address;
-
-    // Check if user has X linked
-    const twitterAccount = privyUser?.twitter;
-    const hasTwitter = !!twitterAccount;
-
-    // Create or update user in Appwrite when Privy user changes
-    useEffect(() => {
-        const syncUser = async () => {
-            if (!ready) return;
-
-            if (!authenticated || !privyUser) {
-                setUser(null);
-                setLoading(false);
-                return;
-            }
-
-            try {
-                setLoading(true);
-                setError(null);
-
-                // Check if user exists in Appwrite
-                const existingUsers = await databases.listDocuments(
-                    DATABASE_ID,
-                    USERS_COLLECTION_ID,
-                    [Query.equal('privyUserId', privyUser.id)]
-                );
-
-                let appwriteUser: User;
-                const now = new Date().toISOString();
-
-                if (existingUsers.documents.length > 0) {
-                    // Update existing user
-                    const existingUser = existingUsers.documents[0] as unknown as User;
-
-                    const updateData: Partial<User> = {
-                        lastActiveAt: now,
-                    };
-
-                    // Update X info if available
-                    if (twitterAccount) {
-                        updateData.username = twitterAccount.username || existingUser.username;
-                        updateData.displayName = twitterAccount.name || existingUser.displayName;
-                        updateData.profileImage = twitterAccount.profilePictureUrl || existingUser.profileImage;
-                        updateData.followerCount = twitterAccount.followersCount || existingUser.followerCount;
-                        updateData.verified = twitterAccount.verified || existingUser.verified;
-
-                        // Legacy fields for compatibility
-                        updateData.twitterHandle = twitterAccount.username || existingUser.twitterHandle;
-                        updateData.twitterDisplayName = twitterAccount.name || existingUser.twitterDisplayName;
-                        updateData.twitterPfp = twitterAccount.profilePictureUrl || existingUser.twitterPfp;
-
-                        // Update KOL status and believer rank
-                        updateData.isVerifiedKOL = (twitterAccount.followersCount || 0) > 1000;
-                        updateData.believerRank = calculateBelieverRank(existingUser.believerPoints);
-                    }
-
-                    // Update wallet if available
-                    if (walletAddress && walletAddress !== existingUser.walletAddress) {
-                        updateData.walletAddress = walletAddress;
-                    }
-
-                    const updatedUser = await databases.updateDocument(
-                        DATABASE_ID,
-                        USERS_COLLECTION_ID,
-                        existingUser.$id,
-                        updateData
-                    );
-
-                    appwriteUser = updatedUser as unknown as User;
-                } else {
-                    // Create new user - all required fields must be provided
-                    const newUserData: Omit<User, '$id'> = {
-                        // Required core info
-                        username: twitterAccount?.username || 'anonymous',
-                        displayName: twitterAccount?.name || 'Anonymous User',
-                        profileImage: twitterAccount?.profilePictureUrl || '',
-                        followerCount: twitterAccount?.followersCount || 0,
-                        verified: twitterAccount?.verified || false,
-
-                        // Required points and ranking
-                        believerPoints: 0,
-                        believerRank: calculateBelieverRank(0),
-
-                        // Required timestamps
-                        joinedAt: now,
-                        lastActiveAt: now,
-
-                        // Required Privy integration
-                        privyUserId: privyUser.id,
-
-                        // Optional fields
-                        bio: '',
-                        location: '',
-
-                        // Legacy compatibility fields
-                        twitterHandle: twitterAccount?.username || '',
-                        twitterDisplayName: twitterAccount?.name || '',
-                        twitterPfp: twitterAccount?.profilePictureUrl || '',
-
-                        // Fields with defaults
-                        walletAddress: walletAddress || '',
-                        bobPoints: 0,
-                        totalStaked: 0,
-                        reviewsCount: 0,
-                        projectsSupported: 0,
-                        isVerifiedKOL: (twitterAccount?.followersCount || 0) > 1000,
-
-                        // Legacy field
-                        createdAt: now,
-                    };
-
-                    const createdUser = await databases.createDocument(
-                        DATABASE_ID,
-                        USERS_COLLECTION_ID,
-                        ID.unique(),
-                        newUserData
-                    );
-
-                    appwriteUser = createdUser as unknown as User;
-                }
-
-                setUser(appwriteUser);
-            } catch (err) {
-                console.error('Error syncing user:', err);
-                setError(err instanceof Error ? err.message : 'Failed to sync user data');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        syncUser();
-    }, [authenticated, privyUser, ready, twitterAccount, walletAddress]);
-
-    // Enhanced logout function
-    const logout = async () => {
-        try {
-            await privyLogout();
-            setUser(null);
-            setError(null);
-        } catch (err) {
-            console.error('Error logging out:', err);
-            setError('Failed to logout');
-        }
-    };
-
-    // Connect X function
-    const connectTwitter = async () => {
-        try {
-            await linkTwitter();
-        } catch (err) {
-            console.error('Error connecting X:', err);
-            setError('Failed to connect X account');
-        }
-    };
-
-    // Disconnect X function
-    const disconnectTwitter = async () => {
-        try {
-            await unlinkTwitter(twitterAccount!.subject);
-        } catch (err) {
-            console.error('Error disconnecting X:', err);
-            setError('Failed to disconnect X account');
-        }
-    };
-
-    // Update user points
-    const updateUserPoints = async (bobPoints: number, believerPoints: number) => {
-        if (!user) return;
-
-        try {
-            const newBelieverPoints = user.believerPoints + believerPoints;
-            const newBobPoints = user.bobPoints + bobPoints;
-
-            const updatedUser = await databases.updateDocument(
-                DATABASE_ID,
-                USERS_COLLECTION_ID,
-                user.$id,
-                {
-                    bobPoints: newBobPoints,
-                    believerPoints: newBelieverPoints,
-                    believerRank: calculateBelieverRank(newBelieverPoints),
-                    lastActiveAt: new Date().toISOString(),
-                }
-            );
-
-            setUser(updatedUser as unknown as User);
-        } catch (err) {
-            console.error('Error updating user points:', err);
-            setError('Failed to update points');
-        }
-    };
-
-    // Update user profile
-    const updateUserProfile = async (updates: Partial<Pick<User, 'bio' | 'location'>>) => {
-        if (!user) return;
-
-        try {
-            const updatedUser = await databases.updateDocument(
-                DATABASE_ID,
-                USERS_COLLECTION_ID,
-                user.$id,
-                {
-                    ...updates,
-                    lastActiveAt: new Date().toISOString(),
-                }
-            );
-
-            setUser(updatedUser as unknown as User);
-        } catch (err) {
-            console.error('Error updating user profile:', err);
-            setError('Failed to update profile');
-        }
-    };
-
-    return {
-        // User data
-        user,
-        privyUser,
-        authenticated,
-        loading,
-        error,
-        ready,
-
-        // Authentication state
-        hasTwitter,
-        hasWallet: !!walletAddress,
-        walletAddress,
-        solanaWallet,
-
-        // Authentication methods
-        login,
-        logout,
-        connectTwitter,
-        disconnectTwitter,
-
-        // User management
-        updateUserPoints,
-        updateUserProfile,
-
-        // Helper methods
-        isKOL: user?.isVerifiedKOL || false,
-        userDisplayName: user?.displayName || user?.username || 'Anonymous',
-        userAvatar: user?.profileImage || null,
-        believerRank: user?.believerRank || 'Newcomer',
-        isVerified: user?.verified || false,
-    };
-};
+export interface BelieverActivity {
+    $id?: string;
+    userId: string;
+    activity: 'review' | 'vote' | 'stake' | 'early_support' | 'kol_endorsement';
+    pointsEarned: number;
+    projectId?: string;
+    description: string;
+    createdAt: string;
+}
