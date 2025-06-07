@@ -268,7 +268,7 @@ export default function ProjectForm() {
                 bobScore: 0,
                 estimatedReturn: 0,
                 simulatedInvestment: 0,
-                upvotedBy: [],
+                upvotes: [],
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             };
