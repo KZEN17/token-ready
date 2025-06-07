@@ -121,8 +121,9 @@ export const useUser = () => {
                         updateData.username = twitterAccount.username || existingUser.username;
                         updateData.displayName = twitterAccount.name || existingUser.displayName;
                         updateData.profileImage = twitterAccount.profilePictureUrl || existingUser.profileImage;
-                        updateData.followerCount = twitterAccount.followersCount || existingUser.followerCount;
-                        updateData.verified = twitterAccount.verified || existingUser.verified;
+                        // Fix: Check if the property exists before accessing it
+                        updateData.followerCount = (twitterAccount as any).followersCount || existingUser.followerCount || 0;
+                        updateData.verified = (twitterAccount as any).verified || existingUser.verified;
 
                         // Update compatibility fields
                         updateData.twitterHandle = twitterAccount.username || existingUser.twitterHandle;
@@ -130,14 +131,14 @@ export const useUser = () => {
                         updateData.twitterPfp = twitterAccount.profilePictureUrl || existingUser.twitterPfp;
 
                         // Update KOL status and believer rank
-                        updateData.isVerifiedKOL = (twitterAccount.followersCount || 0) > 1000;
+                        updateData.isVerifiedKOL = ((twitterAccount as any).followersCount || 0) > 1000;
                         updateData.believerRank = calculateBelieverRank(existingUser.believerPoints);
                     }
 
                     // Update wallet if available
-                    if (walletAddress && walletAddress !== existingUser.walletAddress) {
-                        updateData.walletAddress = walletAddress;
-                    }
+                    // if (walletAddress && walletAddress !== existingUser.walletAddress) {
+                    //     updateData.walletAddress = walletAddress;
+                    // }
 
                     const updatedUser = await databases.updateDocument(
                         DATABASE_ID,
@@ -154,8 +155,8 @@ export const useUser = () => {
                         username: twitterAccount?.username || 'anonymous',
                         displayName: twitterAccount?.name || 'Anonymous User',
                         profileImage: twitterAccount?.profilePictureUrl || '',
-                        followerCount: twitterAccount?.followersCount || 0,
-                        verified: twitterAccount?.verified || false,
+                        followerCount: (twitterAccount as any)?.followersCount || 0,
+                        verified: (twitterAccount as any)?.verified || false,
 
                         // Required points and ranking
                         believerPoints: 0,
