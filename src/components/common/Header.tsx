@@ -41,8 +41,8 @@ export default function Header() {
         authenticated,
         loading,
         hasTwitter,
-        hasWallet,
-        walletAddress,
+        // hasWallet,
+        // walletAddress,
         userDisplayName,
         userAvatar,
         isKOL,
@@ -221,7 +221,8 @@ export default function Header() {
                             // Authenticated - show user profile and wallet
                             <>
                                 {/* Wallet Connection Status */}
-                                {hasWallet ? (
+                                <></>
+                                {/* {hasWallet ? (
                                     <Chip
                                         icon={<AccountBalanceWallet />}
                                         label={formatWalletAddress(walletAddress!)}
@@ -244,7 +245,7 @@ export default function Header() {
                                     >
                                         Connect Wallet
                                     </Button>
-                                )}
+                                )} */}
 
                                 {/* User Menu */}
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -398,12 +399,12 @@ export default function Header() {
                                     )}
 
                                     {/* Connect Wallet if not connected */}
-                                    {!hasWallet && (
+                                    {/* {!hasWallet && (
                                         <MenuItem onClick={handleMenuClose}>
                                             <AccountBalanceWallet sx={{ mr: 2 }} />
                                             Connect Wallet
                                         </MenuItem>
-                                    )}
+                                    )} */}
 
                                     <MenuItem onClick={handleMenuClose}>
                                         <Settings sx={{ mr: 2 }} />

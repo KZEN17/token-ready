@@ -75,9 +75,9 @@ export const useUser = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Get the primary Solana wallet
-    // const solanaWallet = wallets.find(wallet => wallet.chainType === 'solana');
-    // const walletAddress = solanaWallet?.address;
+    //   // Get the primary Solana wallet
+    //   const solanaWallet = wallets.find(wallet => wallet.chainType === 'solana');
+    //   const walletAddress = solanaWallet?.address;
 
     // Check if user has X linked
     const twitterAccount = privyUser?.twitter;
@@ -135,9 +135,9 @@ export const useUser = () => {
                     }
 
                     // Update wallet if available
-                    // if (walletAddress && walletAddress !== existingUser.walletAddress) {
-                    //     updateData.walletAddress = walletAddress;
-                    // }
+                    if (walletAddress && walletAddress !== existingUser.walletAddress) {
+                        updateData.walletAddress = walletAddress;
+                    }
 
                     const updatedUser = await databases.updateDocument(
                         DATABASE_ID,
@@ -178,7 +178,7 @@ export const useUser = () => {
                         twitterPfp: twitterAccount?.profilePictureUrl || '',
 
                         // Fields with defaults
-                        walletAddress: '',
+                        walletAddress: walletAddress || '',
                         bobPoints: 0,
                         totalStaked: 0,
                         reviewsCount: 0,
@@ -209,7 +209,7 @@ export const useUser = () => {
         };
 
         syncUser();
-    }, [authenticated, privyUser, ready, twitterAccount]);
+    }, [authenticated, privyUser, ready, twitterAccount, walletAddress]);
 
     // Enhanced logout function
     const logout = async () => {
