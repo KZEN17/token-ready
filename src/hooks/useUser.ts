@@ -209,7 +209,7 @@ export const useUser = () => {
         };
 
         syncUser();
-    }, [authenticated, privyUser, ready, twitterAccount, walletAddress]);
+    }, [authenticated, privyUser, ready, twitterAccount]);
 
     // Enhanced logout function
     const logout = async () => {
