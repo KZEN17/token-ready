@@ -1,5 +1,5 @@
-// src/lib/believerPointsService.ts (Fixed for your actual schema)
-import { databases, DATABASE_ID, USERS_COLLECTION_ID } from './appwrite';
+// src/lib/believerPointsService.ts (Fixed with correct collection IDs)
+import { databases, DATABASE_ID, USERS_COLLECTION_ID, PROJECTS_COLLECTION_ID } from './appwrite';
 import { ID, Query } from 'appwrite';
 import {
     BelieverAction,
@@ -11,8 +11,8 @@ import {
     canPerformAction
 } from './believerPoints';
 
-// Collection ID with fallback
-export const BELIEVER_ACTIONS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_BELIEVER_ACTIONS_COLLECTION_ID || 'believer_actions';
+// Use the actual environment variable instead of fallback
+export const BELIEVER_ACTIONS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_BELIEVER_ACTIONS_COLLECTION_ID || '';
 
 export class BelieverPointsService {
     /**
@@ -48,29 +48,33 @@ export class BelieverPointsService {
                     break;
             }
 
-            // Create action record - store the user.$id as userId
-            const actionData = {
-                type: actionType,
-                points,
-                description: BELIEVER_ACTIONS[actionType].description,
-                userId: userId, // This should be the user.$id (document ID)
-                projectId: projectId || null,
-                metadata: metadata ? JSON.stringify(metadata) : null,
-                createdAt: new Date().toISOString()
-            };
+            // Only try to create action record if collection ID is set
+            if (BELIEVER_ACTIONS_COLLECTION_ID) {
+                const actionData = {
+                    type: actionType,
+                    points,
+                    description: BELIEVER_ACTIONS[actionType].description,
+                    userId: userId, // This should be the user.$id (document ID)
+                    projectId: projectId || null,
+                    metadata: metadata ? JSON.stringify(metadata) : null,
+                    createdAt: new Date().toISOString()
+                };
 
-            try {
-                const action = await databases.createDocument(
-                    DATABASE_ID,
-                    BELIEVER_ACTIONS_COLLECTION_ID,
-                    ID.unique(),
-                    actionData
-                );
+                try {
+                    const action = await databases.createDocument(
+                        DATABASE_ID,
+                        BELIEVER_ACTIONS_COLLECTION_ID,
+                        ID.unique(),
+                        actionData
+                    );
 
-                console.log('✅ Action recorded in believer_actions collection');
-            } catch (actionError) {
-                console.warn('Could not save to believer_actions collection:', actionError);
-                // Continue anyway - we'll still update user points
+                    console.log('✅ Action recorded in believer_actions collection');
+                } catch (actionError) {
+                    console.warn('Could not save to believer_actions collection:', actionError);
+                    // Continue anyway - we'll still update user points
+                }
+            } else {
+                console.log('ℹ️ BELIEVER_ACTIONS_COLLECTION_ID not set, skipping action record');
             }
 
             // Update user's believer points in users collection using the document ID
@@ -113,49 +117,51 @@ export class BelieverPointsService {
             const totalPoints = userRecord?.believerPoints || 0;
             const rank = calculateBelieverRank(totalPoints);
 
-            // Try to get additional stats from actions if possible
+            // Try to get additional stats from actions if collection exists
             let todayPoints = 0;
             let weeklyProgress = 0;
             let streak = 0;
 
-            try {
-                // Try to get today's actions
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+            if (BELIEVER_ACTIONS_COLLECTION_ID) {
+                try {
+                    // Try to get today's actions
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
 
-                const todayActions = await databases.listDocuments(
-                    DATABASE_ID,
-                    BELIEVER_ACTIONS_COLLECTION_ID,
-                    [
-                        Query.equal('userId', userId),
-                        Query.greaterThanEqual('createdAt', today.toISOString()),
-                        Query.limit(100)
-                    ]
-                );
+                    const todayActions = await databases.listDocuments(
+                        DATABASE_ID,
+                        BELIEVER_ACTIONS_COLLECTION_ID,
+                        [
+                            Query.equal('userId', userId),
+                            Query.greaterThanEqual('createdAt', today.toISOString()),
+                            Query.limit(100)
+                        ]
+                    );
 
-                todayPoints = todayActions.documents.reduce((sum: number, action: any) => sum + (action.points || 0), 0);
+                    todayPoints = todayActions.documents.reduce((sum: number, action: any) => sum + (action.points || 0), 0);
 
-                // Get weekly progress
-                const weekStart = new Date();
-                weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-                weekStart.setHours(0, 0, 0, 0);
+                    // Get weekly progress
+                    const weekStart = new Date();
+                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                    weekStart.setHours(0, 0, 0, 0);
 
-                const weeklyActions = await databases.listDocuments(
-                    DATABASE_ID,
-                    BELIEVER_ACTIONS_COLLECTION_ID,
-                    [
-                        Query.equal('userId', userId),
-                        Query.greaterThanEqual('createdAt', weekStart.toISOString()),
-                        Query.limit(100)
-                    ]
-                );
+                    const weeklyActions = await databases.listDocuments(
+                        DATABASE_ID,
+                        BELIEVER_ACTIONS_COLLECTION_ID,
+                        [
+                            Query.equal('userId', userId),
+                            Query.greaterThanEqual('createdAt', weekStart.toISOString()),
+                            Query.limit(100)
+                        ]
+                    );
 
-                const uniqueActionTypes = new Set(weeklyActions.documents.map((action: any) => action.type));
-                weeklyProgress = uniqueActionTypes.size;
+                    const uniqueActionTypes = new Set(weeklyActions.documents.map((action: any) => action.type));
+                    weeklyProgress = uniqueActionTypes.size;
 
-            } catch (actionsError) {
-                console.warn('Could not fetch action details:', actionsError);
-                // Use defaults
+                } catch (actionsError) {
+                    console.warn('Could not fetch action details:', actionsError);
+                    // Use defaults
+                }
             }
 
             return {
@@ -199,7 +205,7 @@ export class BelieverPointsService {
             // Get users sorted by believerPoints
             const usersResponse = await databases.listDocuments(
                 DATABASE_ID,
-                USERS_COLLECTION_ID,
+                USERS_COLLECTION_ID, // Use the environment variable
                 [
                     Query.orderDesc('believerPoints'),
                     Query.limit(limit)
@@ -241,10 +247,10 @@ export class BelieverPointsService {
         momentum: number;
     }>> {
         try {
-            // Fallback: get projects from your existing projects collection
+            // Use the proper environment variable instead of hardcoded 'projects'
             const projectsResponse = await databases.listDocuments(
                 DATABASE_ID,
-                'projects', // Your existing projects collection ID
+                PROJECTS_COLLECTION_ID, // ← This was the issue! Was hardcoded as 'projects'
                 [
                     Query.orderDesc('bobScore'),
                     Query.limit(limit)
@@ -263,7 +269,7 @@ export class BelieverPointsService {
 
         } catch (error) {
             console.error('Error getting project leaderboard:', error);
-            return [];
+            throw error; // Re-throw to see the actual error
         }
     }
 
@@ -275,7 +281,7 @@ export class BelieverPointsService {
             // Get user by document ID
             const response = await databases.getDocument(
                 DATABASE_ID,
-                USERS_COLLECTION_ID,
+                USERS_COLLECTION_ID, // Use environment variable
                 userId
             );
             return response;
@@ -301,7 +307,7 @@ export class BelieverPointsService {
             // Update user record by document ID
             await databases.updateDocument(
                 DATABASE_ID,
-                USERS_COLLECTION_ID,
+                USERS_COLLECTION_ID, // Use environment variable
                 userId,
                 {
                     believerPoints: newPoints,

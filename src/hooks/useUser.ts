@@ -1,4 +1,4 @@
-// src/hooks/useUser.ts (Updated to sync believer points)
+// src/hooks/useUser.ts (Fixed version)
 'use client';
 
 import { usePrivy, useWallets } from '@privy-io/react-auth';
@@ -62,7 +62,39 @@ const calculateBelieverRank = (points: number): string => {
     return 'Believer';
 };
 
-export const useUser = () => {
+// Define the return type of the useUser hook
+interface UseUserReturn {
+    // User data
+    user: User | null;
+    privyUser: any;
+    authenticated: boolean;
+    loading: boolean;
+    error: string | null;
+    ready: boolean;
+
+    // Authentication state
+    hasTwitter: boolean;
+
+    // Authentication methods
+    login: () => void;
+    logout: () => Promise<void>;
+    connectTwitter: () => Promise<void>;
+    disconnectTwitter: () => Promise<void>;
+
+    // User management
+    updateUserPoints: (bobPointsToAdd: number, believerPointsToAdd: number) => Promise<void>;
+    updateUserProfile: (updates: Partial<Pick<User, 'bio' | 'location'>>) => Promise<void>;
+    refreshUserData: () => Promise<void>;
+
+    // Helper methods
+    isKOL: boolean;
+    userDisplayName: string;
+    userAvatar: string | null;
+    believerRank: string;
+    isVerified: boolean;
+}
+
+export const useUser = (): UseUserReturn => {
     const {
         user: privyUser,
         authenticated,
@@ -84,7 +116,7 @@ export const useUser = () => {
     const hasTwitter = !!twitterAccount;
 
     // Update user points function
-    const updateUserPoints = async (bobPointsToAdd: number, believerPointsToAdd: number): Promise<void> => {
+    const updateUserPoints = useCallback(async (bobPointsToAdd: number, believerPointsToAdd: number): Promise<void> => {
         const currentUser = user;
         if (!currentUser) {
             throw new Error('No user found');
@@ -121,7 +153,7 @@ export const useUser = () => {
             setError('Failed to update points');
             throw err;
         }
-    };
+    }, [user]);
 
     // Refresh user data from database
     const refreshUserData = useCallback(async () => {
@@ -264,7 +296,7 @@ export const useUser = () => {
     }, [authenticated, privyUser, ready, twitterAccount]);
 
     // Enhanced logout function
-    const logout = async () => {
+    const logout = useCallback(async () => {
         try {
             await privyLogout();
             setUser(null);
@@ -273,30 +305,32 @@ export const useUser = () => {
             console.error('Error logging out:', err);
             setError('Failed to logout');
         }
-    };
+    }, [privyLogout]);
 
     // Connect X function
-    const connectTwitter = async () => {
+    const connectTwitter = useCallback(async () => {
         try {
             await linkTwitter();
         } catch (err) {
             console.error('Error connecting X:', err);
             setError('Failed to connect X account');
         }
-    };
+    }, [linkTwitter]);
 
     // Disconnect X function
-    const disconnectTwitter = async () => {
+    const disconnectTwitter = useCallback(async () => {
+        if (!twitterAccount) return;
+
         try {
-            await unlinkTwitter(twitterAccount!.subject);
+            await unlinkTwitter(twitterAccount.subject);
         } catch (err) {
             console.error('Error disconnecting X:', err);
             setError('Failed to disconnect X account');
         }
-    };
+    }, [unlinkTwitter, twitterAccount]);
 
     // Update user profile
-    const updateUserProfile = async (updates: Partial<Pick<User, 'bio' | 'location'>>) => {
+    const updateUserProfile = useCallback(async (updates: Partial<Pick<User, 'bio' | 'location'>>) => {
         if (!user) return;
 
         try {
@@ -315,7 +349,7 @@ export const useUser = () => {
             console.error('Error updating user profile:', err);
             setError('Failed to update profile');
         }
-    };
+    }, [user]);
 
     return {
         // User data

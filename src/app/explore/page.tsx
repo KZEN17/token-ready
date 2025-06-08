@@ -50,7 +50,8 @@ interface Project {
 
 export default function ExplorePage() {
     const router = useRouter();
-    const { user, authenticated } = useUser();
+    // Fix: Destructure updateUserPoints directly from the hook
+    const { user, authenticated, updateUserPoints } = useUser();
     const { requireAuth, showAuthDialog, hideAuthDialog, authMessage, login } = useAuthGuard();
 
     const [projects, setProjects] = useState<Project[]>([]);
@@ -171,10 +172,16 @@ export default function ExplorePage() {
                 { upvotes: newUpvotes }
             );
 
+            // Fix: Use updateUserPoints from hook, not from user object
             // Award user points for upvoting (optional)
-            // if (!isCurrentlyUpvoted && user.updateUserPoints) {
-            //     await user.updateUserPoints(1, 5); // 1 BOB point, 5 believer points
-            // }
+            if (!isCurrentlyUpvoted && updateUserPoints) {
+                try {
+                    await updateUserPoints(1, 5); // 1 BOB point, 5 believer points
+                } catch (pointsError) {
+                    console.error('Failed to update user points:', pointsError);
+                    // Don't fail the upvote if points update fails
+                }
+            }
         } catch (error) {
             console.error('Failed to update upvote:', error);
             // Revert local state on error
