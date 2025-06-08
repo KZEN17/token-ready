@@ -14,6 +14,8 @@ import { useState, useEffect } from 'react';
 import { databases, DATABASE_ID, PROJECTS_COLLECTION_ID } from '../../lib/appwrite';
 import { Query } from 'appwrite';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/hooks/useUser';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 // Import our new modular components
 import ExploreHero from '@/components/explore/ExploreHero';
@@ -21,6 +23,7 @@ import ExploreFilters from '@/components/explore/ExploreFilters';
 import EmptyState from '@/components/explore/EmptyState';
 import FloatingActionButton from '@/components/explore/FloatingActionButton';
 import ProjectCard from '@/components/projects/ProjectCard';
+import AuthDialog from '@/components/auth/AuthDialog';
 
 interface Project {
     $id: string;
@@ -47,6 +50,9 @@ interface Project {
 
 export default function ExplorePage() {
     const router = useRouter();
+    const { user, authenticated } = useUser();
+    const { requireAuth, showAuthDialog, hideAuthDialog, authMessage, login } = useAuthGuard();
+
     const [projects, setProjects] = useState<Project[]>([]);
     const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
@@ -56,8 +62,7 @@ export default function ExplorePage() {
     const [sortBy, setSortBy] = useState('newest');
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
-    // TODO: Get actual user ID from authentication
-    const currentUserId = 'user_123';
+    const currentUserId = user?.$id || 'anonymous';
 
     const fetchProjects = async () => {
         try {
@@ -132,6 +137,11 @@ export default function ExplorePage() {
     };
 
     const handleUpvote = async (projectId: string) => {
+        if (!authenticated || !user) {
+            requireAuth(() => handleUpvote(projectId), 'upvote projects');
+            return;
+        }
+
         const project = projects.find(p => p.$id === projectId);
         if (!project) return;
 
@@ -160,6 +170,11 @@ export default function ExplorePage() {
                 projectId,
                 { upvotes: newUpvotes }
             );
+
+            // Award user points for upvoting (optional)
+            if (!isCurrentlyUpvoted && user.updateUserPoints) {
+                await user.updateUserPoints(1, 5); // 1 BOB point, 5 believer points
+            }
         } catch (error) {
             console.error('Failed to update upvote:', error);
             // Revert local state on error
@@ -168,6 +183,11 @@ export default function ExplorePage() {
     };
 
     const handleToggleFavorite = (projectId: string) => {
+        if (!authenticated) {
+            requireAuth(() => handleToggleFavorite(projectId), 'add projects to favorites');
+            return;
+        }
+
         const newFavorites = new Set(favorites);
         if (favorites.has(projectId)) {
             newFavorites.delete(projectId);
@@ -175,10 +195,26 @@ export default function ExplorePage() {
             newFavorites.add(projectId);
         }
         setFavorites(newFavorites);
+
+        // In a real app, you'd save this to the user's profile
+        // For now, just store in local state
     };
 
     const handleReview = (projectId: string) => {
+        if (!authenticated) {
+            requireAuth(() => handleReview(projectId), 'review projects');
+            return;
+        }
         router.push(`/project/${projectId}`);
+    };
+
+    // Handle floating action button click
+    const handleSubmitProject = () => {
+        if (!authenticated) {
+            requireAuth(() => handleSubmitProject(), 'submit projects');
+            return;
+        }
+        router.push('/submit');
     };
 
     // Calculate stats for hero section
@@ -248,6 +284,33 @@ export default function ExplorePage() {
                     totalBelievers={totalBelievers}
                 />
 
+                {/* Authentication Status Banner */}
+                {!authenticated && (
+                    <Box sx={{ mb: 4 }}>
+                        <Alert
+                            severity="info"
+                            sx={{
+                                backgroundColor: alpha('#00ff88', 0.1),
+                                color: '#00ff88',
+                                border: '1px solid #00ff88',
+                                borderRadius: 2,
+                            }}
+                            action={
+                                <Button
+                                    color="inherit"
+                                    size="small"
+                                    onClick={() => requireAuth(() => { }, 'access all features')}
+                                    sx={{ fontWeight: 'bold' }}
+                                >
+                                    Login
+                                </Button>
+                            }
+                        >
+                            👋 Login with X to upvote, review, and submit projects to earn Believer Points!
+                        </Alert>
+                    </Box>
+                )}
+
                 {/* Search and Filters */}
                 <ExploreFilters
                     searchTerm={searchTerm}
@@ -280,9 +343,46 @@ export default function ExplorePage() {
                     </Grid>
                 )}
 
-                {/* Floating Action Button */}
-                <FloatingActionButton />
+                {/* Floating Action Button with Auth Guard */}
+                <Box
+                    sx={{
+                        position: 'fixed',
+                        bottom: 32,
+                        right: 32,
+                        zIndex: 1000,
+                    }}
+                >
+                    <Button
+                        variant="contained"
+                        onClick={handleSubmitProject}
+                        sx={{
+                            width: 64,
+                            height: 64,
+                            borderRadius: '50%',
+                            minWidth: 'unset',
+                            background: 'linear-gradient(45deg, #00ff88, #4dffb0)',
+                            color: '#000',
+                            fontSize: '2rem',
+                            '&:hover': {
+                                background: 'linear-gradient(45deg, #4dffb0, #00ff88)',
+                                transform: 'scale(1.1)',
+                                boxShadow: '0 8px 25px rgba(0, 255, 136, 0.4)',
+                            },
+                            boxShadow: `0 8px 25px ${alpha('#00ff88', 0.4)}`,
+                        }}
+                    >
+                        +
+                    </Button>
+                </Box>
             </Container>
+
+            {/* Auth Dialog */}
+            <AuthDialog
+                open={showAuthDialog}
+                onClose={hideAuthDialog}
+                onLogin={login}
+                message={authMessage}
+            />
         </Box>
     );
 }

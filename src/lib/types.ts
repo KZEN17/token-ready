@@ -45,7 +45,6 @@ export interface User {
     createdAt: string;         // Will map to joinedAt
 }
 
-
 export interface Project {
     $id: string;
     name: string;
@@ -79,6 +78,7 @@ export interface Review {
     investment: number;
     believerPoints: number;
     createdAt: string;
+    // Note: No updatedAt field to match Appwrite schema
 }
 
 export interface StakingPool {

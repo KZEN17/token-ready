@@ -1,11 +1,12 @@
 'use client';
 
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { databases, DATABASE_ID, USERS_COLLECTION_ID } from '../lib/appwrite';
 import { ID, Query } from 'appwrite';
 
 interface User {
+    updateUserPoints: any;
     $id: string;
 
     // Core user info (required fields)
@@ -45,6 +46,8 @@ interface User {
 
     // Legacy field
     createdAt: string;         // Maps to joinedAt
+
+    // Remove the updateUserPoints method from the User interface
 }
 
 // Helper function to calculate believer rank
@@ -75,13 +78,51 @@ export const useUser = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    //   // Get the primary Solana wallet
-    //   const solanaWallet = wallets.find(wallet => wallet.chainType === 'solana');
-    //   const walletAddress = solanaWallet?.address;
-
     // Check if user has X linked
     const twitterAccount = privyUser?.twitter;
     const hasTwitter = !!twitterAccount;
+
+    // Update user points function
+    const updateUserPoints = async (bobPointsToAdd: number, believerPointsToAdd: number): Promise<void> => {
+        // Get the current user from state
+        const currentUser = user;
+        if (!currentUser) {
+            throw new Error('No user found');
+        }
+
+        try {
+            const newBobPoints = currentUser.bobPoints + bobPointsToAdd;
+            const newBelieverPoints = currentUser.believerPoints + believerPointsToAdd;
+            const newBelieverRank = calculateBelieverRank(newBelieverPoints);
+
+            await databases.updateDocument(
+                DATABASE_ID,
+                USERS_COLLECTION_ID,
+                currentUser.$id,
+                {
+                    bobPoints: newBobPoints,
+                    believerPoints: newBelieverPoints,
+                    believerRank: newBelieverRank,
+                    lastActiveAt: new Date().toISOString(),
+                }
+            );
+
+            // Update local state
+            setUser(prev => prev ? {
+                ...prev,
+                bobPoints: newBobPoints,
+                believerPoints: newBelieverPoints,
+                believerRank: newBelieverRank,
+                lastActiveAt: new Date().toISOString(),
+                updateUserPoints, // Re-attach the method
+            } : null);
+
+        } catch (err) {
+            console.error('Error updating user points:', err);
+            setError('Failed to update points');
+            throw err;
+        }
+    };
 
     // Create or update user in Appwrite when Privy user changes
     useEffect(() => {
@@ -121,7 +162,6 @@ export const useUser = () => {
                         updateData.username = twitterAccount.username || existingUser.username;
                         updateData.displayName = twitterAccount.name || existingUser.displayName;
                         updateData.profileImage = twitterAccount.profilePictureUrl || existingUser.profileImage;
-                        // Fix: Check if the property exists before accessing it
                         updateData.followerCount = (twitterAccount as any).followersCount || existingUser.followerCount || 0;
                         updateData.verified = (twitterAccount as any).verified || existingUser.verified;
 
@@ -135,11 +175,6 @@ export const useUser = () => {
                         updateData.believerRank = calculateBelieverRank(existingUser.believerPoints);
                     }
 
-                    // Update wallet if available
-                    // if (walletAddress && walletAddress !== existingUser.walletAddress) {
-                    //     updateData.walletAddress = walletAddress;
-                    // }
-
                     const updatedUser = await databases.updateDocument(
                         DATABASE_ID,
                         USERS_COLLECTION_ID,
@@ -150,7 +185,7 @@ export const useUser = () => {
                     appwriteUser = updatedUser as unknown as User;
                 } else {
                     // Create new user - all required fields must be provided
-                    const newUserData: Omit<User, '$id'> = {
+                    const newUserData: Omit<User, '$id' | 'updateUserPoints'> = {
                         // Required core info
                         username: twitterAccount?.username || 'anonymous',
                         displayName: twitterAccount?.name || 'Anonymous User',
@@ -200,6 +235,7 @@ export const useUser = () => {
                     appwriteUser = createdUser as unknown as User;
                 }
 
+                // Set user without updateUserPoints method
                 setUser(appwriteUser);
             } catch (err) {
                 console.error('Error syncing user:', err);
@@ -244,33 +280,6 @@ export const useUser = () => {
         }
     };
 
-    // Update user points
-    const updateUserPoints = async (bobPoints: number, believerPoints: number) => {
-        if (!user) return;
-
-        try {
-            const newBelieverPoints = user.believerPoints + believerPoints;
-            const newBobPoints = user.bobPoints + bobPoints;
-
-            const updatedUser = await databases.updateDocument(
-                DATABASE_ID,
-                USERS_COLLECTION_ID,
-                user.$id,
-                {
-                    bobPoints: newBobPoints,
-                    believerPoints: newBelieverPoints,
-                    believerRank: calculateBelieverRank(newBelieverPoints),
-                    lastActiveAt: new Date().toISOString(),
-                }
-            );
-
-            setUser(updatedUser as unknown as User);
-        } catch (err) {
-            console.error('Error updating user points:', err);
-            setError('Failed to update points');
-        }
-    };
-
     // Update user profile
     const updateUserProfile = async (updates: Partial<Pick<User, 'bio' | 'location'>>) => {
         if (!user) return;
@@ -304,9 +313,6 @@ export const useUser = () => {
 
         // Authentication state
         hasTwitter,
-        // hasWallet: !!walletAddress,
-        // walletAddress,
-        // solanaWallet,
 
         // Authentication methods
         login,

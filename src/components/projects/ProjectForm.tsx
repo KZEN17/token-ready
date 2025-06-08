@@ -1,534 +1,482 @@
-// src/components/projects/ProjectForm.tsx
 'use client';
 
 import {
-    Box,
-    Paper,
-    Grid,
-    Alert,
+    Card,
+    CardContent,
     Typography,
-    Container,
+    Box,
+    TextField,
+    Slider,
+    Alert,
+    Button,
     alpha,
+    CircularProgress,
+    Chip,
 } from '@mui/material';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { storage, databases, DATABASE_ID, PROJECTS_COLLECTION_ID } from '../../lib/appwrite';
-import { ID } from 'appwrite';
-import LogoUploadSection from './form/LogoUploadSection';
-import TeamMembersSection from './form/TeamMembersSection';
-import FormTextField from './form/FormTextField';
-import FormSelect from './form/FormSelect';
-import ProjectChecklist from './form/ProjectChecklist';
-import SubmitButton from './form/SubmitButton';
+import { useState, useEffect } from 'react';
+import { Star, CheckCircle, Warning } from '@mui/icons-material';
+import { ReviewService } from '@/lib/reviewService';
+import { useUser } from '@/hooks/useUser';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
+import AuthDialog from '@/components/auth/AuthDialog';
 
-interface ProjectFormData {
-    name: string;
-    ticker: string;
-    twitter: string;
-    website: string;
-    github: string;
-    pitch: string;
-    description: string;
-    launchDate: string;
-    requestTwitterSpace: string;
-    whitepaper: string;
-    category: string;
+interface ProjectReviewFormProps {
+    projectId: string;
+    projectTicker: string;
+    projectName: string;
+    onReviewSubmitted?: (review: any) => void;
 }
 
-// Simplified logo validation function
-const validateLogoFile = (file: File): Promise<{ isValid: boolean; error?: string }> => {
-    return new Promise((resolve) => {
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-        if (!allowedTypes.includes(file.type)) {
-            resolve({
-                isValid: false,
-                error: 'Please select a valid image file (JPEG, PNG, GIF, WebP, or SVG)'
-            });
-            return;
-        }
+export default function ProjectReviewForm({
+    projectId,
+    projectTicker,
+    projectName,
+    onReviewSubmitted,
+}: ProjectReviewFormProps) {
+    const { user, authenticated } = useUser();
+    const { requireAuth, showAuthDialog, hideAuthDialog, authMessage, login } = useAuthGuard();
 
-        if (file.type === 'image/svg+xml') {
-            resolve({ isValid: true });
-            return;
-        }
-
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
-
-        img.onload = () => {
-            URL.revokeObjectURL(objectUrl);
-            const minWidth = 64;
-            const minHeight = 64;
-
-            if (img.width < minWidth || img.height < minHeight) {
-                resolve({
-                    isValid: false,
-                    error: `Image dimensions too small. Minimum: ${minWidth}x${minHeight}px, Current: ${img.width}x${img.height}px`
-                });
-            } else {
-                resolve({ isValid: true });
-            }
-        };
-
-        img.onerror = () => {
-            URL.revokeObjectURL(objectUrl);
-            resolve({
-                isValid: false,
-                error: 'Invalid image file or corrupted image'
-            });
-        };
-
-        img.src = objectUrl;
-    });
-};
-
-export default function ProjectForm() {
+    const [rating, setRating] = useState(8);
+    const [comment, setComment] = useState('');
+    const [investment, setInvestment] = useState(1500);
     const [loading, setLoading] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
+    const [hasReviewed, setHasReviewed] = useState(false);
+    const [checkingReview, setCheckingReview] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [logoFile, setLogoFile] = useState<File | null>(null);
-    const [logoPreview, setLogoPreview] = useState<string | null>(null);
-    const [uploadingLogo, setUploadingLogo] = useState(false);
-    const [pitchLength, setPitchLength] = useState(0);
-    const [descriptionLength, setDescriptionLength] = useState(0);
-    const [teamMembers, setTeamMembers] = useState<string[]>(['']);
+    const [success, setSuccess] = useState(false);
 
-    const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<ProjectFormData>();
+    // Check if user has already reviewed this project
+    useEffect(() => {
+        const checkExistingReview = async () => {
+            if (!authenticated || !user) return;
 
-    const pitchValue = watch('pitch', '');
-    const descriptionValue = watch('description', '');
-
-    // Update character counts when values change
-    useState(() => {
-        setPitchLength(pitchValue?.length || 0);
-        setDescriptionLength(descriptionValue?.length || 0);
-    });
-
-    const categories = [
-        'AI & Tools',
-        'DeFi',
-        'GameFi',
-        'Meme & Culture',
-        'Social & Media',
-        'Infrastructure',
-        'NFT & Metaverse',
-    ];
-
-    const checklistItems = [
-        'Idea validated with Web3-native advisors',
-        'Clear Product-Founder Fit explained',
-        'Professional branding, site, tagline, assets ready',
-        'Twitter, Telegram, and Discord presence',
-        'MVP or Demo Live with GitHub or Figma links',
-        'Video intro & launch tweet prepped',
-        'Notable investors or influencers backing listed',
-        'Tokenomics, utility docs, and whitepaper shared',
-        'Twitter Space + launch date confirmed',
-        'Dexscreener, icon, site, and contract filled',
-    ];
-
-    const handleLogoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        setError(null);
-        setUploadingLogo(true);
-
-        try {
-            const validation = await validateLogoFile(file);
-
-            if (!validation.isValid) {
-                setError(validation.error!);
-                setUploadingLogo(false);
-                event.target.value = '';
-                return;
+            setCheckingReview(true);
+            try {
+                const hasReview = await ReviewService.hasUserReviewedProject(user.$id, projectId);
+                setHasReviewed(hasReview);
+            } catch (error) {
+                console.error('Error checking existing review:', error);
+            } finally {
+                setCheckingReview(false);
             }
+        };
 
-            setLogoFile(file);
+        checkExistingReview();
+    }, [authenticated, user, projectId]);
 
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setLogoPreview(reader.result as string);
-                setUploadingLogo(false);
-            };
-            reader.onerror = () => {
-                setError('Failed to read the image file');
-                setUploadingLogo(false);
-            };
-            reader.readAsDataURL(file);
+    const calculateEstimatedPoints = () => {
+        // Use the same calculation logic as the service
+        const ratingPoints = rating * 10;
+        let investmentPoints = 0;
+        if (investment >= 5000) investmentPoints = 50;
+        else if (investment >= 2500) investmentPoints = 30;
+        else if (investment >= 1000) investmentPoints = 20;
+        else if (investment >= 500) investmentPoints = 10;
+        else if (investment >= 100) investmentPoints = 5;
 
-        } catch (error) {
-            setError('Failed to validate the image file');
-            setUploadingLogo(false);
-            event.target.value = '';
+        const bonusPoints = (rating >= 8 && investment >= 1000) ? 20 : 0;
+        return ratingPoints + investmentPoints + bonusPoints;
+    };
+
+    const handleSubmit = async () => {
+        if (!authenticated || !user) {
+            requireAuth(() => { }, 'submit reviews');
+            return;
         }
-    };
 
-    const removeLogo = () => {
-        setLogoFile(null);
-        setLogoPreview(null);
-    };
-
-    const addTeamMember = () => {
-        setTeamMembers(prev => [...prev, '']);
-    };
-
-    const removeTeamMember = (index: number) => {
-        if (teamMembers.length > 1) {
-            setTeamMembers(prev => prev.filter((_, i) => i !== index));
+        if (!comment.trim()) {
+            setError('Please provide a review comment');
+            return;
         }
-    };
 
-    const updateTeamMember = (index: number, value: string) => {
-        setTeamMembers(prev => prev.map((member, i) => i === index ? value : member));
-    };
-
-    const uploadLogo = async (): Promise<string | null> => {
-        if (!logoFile) return null;
-
-        try {
-            setUploadingLogo(true);
-            const bucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID || 'project-logos';
-            const response = await storage.createFile(bucketId, ID.unique(), logoFile);
-            const fileUrl = storage.getFileView(bucketId, response.$id);
-            return fileUrl.toString();
-        } catch (error) {
-            console.error('Logo upload failed:', error);
-            throw new Error('Failed to upload logo');
-        } finally {
-            setUploadingLogo(false);
+        if (comment.length < 10) {
+            setError('Review comment must be at least 10 characters long');
+            return;
         }
-    };
 
-    const onSubmit = async (data: ProjectFormData) => {
         setLoading(true);
         setError(null);
 
         try {
-            if (data.pitch && data.pitch.length > 2000) {
-                throw new Error('Pitch must be 2000 characters or less');
-            }
-            if (data.description && data.description.length > 25000) {
-                throw new Error('Description must be 25000 characters or less');
-            }
-
-            const validTeamMembers = teamMembers.filter(member => member.trim() !== '');
-            if (validTeamMembers.length === 0) {
-                throw new Error('At least one team member is required');
-            }
-
-            let logoUrl = null;
-            if (logoFile) {
-                logoUrl = await uploadLogo();
-            }
-
-            const projectData = {
-                name: data.name,
-                ticker: data.ticker.startsWith('$') ? data.ticker : `$${data.ticker}`,
-                pitch: data.pitch,
-                description: data.description,
-                website: data.website,
-                github: data.github,
-                twitter: data.twitter.startsWith('@') ? data.twitter : `@${data.twitter}`,
-                category: data.category,
-                status: 'pending' as const,
-                launchDate: new Date(data.launchDate).toISOString(),
-                teamMembers: validTeamMembers,
-                whitepaper: data.whitepaper,
-                requestTwitterSpace: data.requestTwitterSpace === 'true',
-                logoUrl: logoUrl,
-                totalStaked: 0,
-                believers: 0,
-                reviews: 0,
-                bobScore: 0,
-                estimatedReturn: 0,
-                simulatedInvestment: 0,
-                upvotes: [] as string[],
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+            const reviewData = {
+                projectId,
+                userId: user.$id,
+                rating,
+                comment: comment.trim(),
+                investment,
             };
 
-            const response = await databases.createDocument(
-                DATABASE_ID,
-                PROJECTS_COLLECTION_ID,
-                ID.unique(),
-                projectData
-            );
+            const newReview = await ReviewService.submitReview(reviewData);
 
-            console.log('Project created successfully:', response);
-            setSubmitted(true);
-            reset();
-            setLogoFile(null);
-            setLogoPreview(null);
-            setTeamMembers(['']);
-            setPitchLength(0);
-            setDescriptionLength(0);
+            // Update user's believer points in the user service
+            if (user?.updateUserPoints) {
+                await user.updateUserPoints(0, newReview.believerPoints);
+            }
+
+            setSuccess(true);
+            setHasReviewed(true);
+            setComment('');
+            setRating(8);
+            setInvestment(1500);
+
+            // Notify parent component
+            if (onReviewSubmitted) {
+                onReviewSubmitted(newReview);
+            }
+
+            // Auto-hide success message after 3 seconds
+            setTimeout(() => setSuccess(false), 3000);
 
         } catch (error: any) {
-            console.error('Error submitting project:', error);
-            setError(error.message || 'Failed to submit project. Please try again.');
+            console.error('Error submitting review:', error);
+            setError(error.message || 'Failed to submit review. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    if (submitted) {
+    const getRatingColor = (rating: number) => {
+        if (rating >= 8) return '#00ff88';
+        if (rating >= 6) return '#ffa726';
+        if (rating >= 4) return '#ff9800';
+        return '#ff6b6b';
+    };
+
+    const getRatingLabel = (rating: number) => {
+        if (rating >= 9) return 'Excellent';
+        if (rating >= 8) return 'Very Good';
+        if (rating >= 7) return 'Good';
+        if (rating >= 6) return 'Decent';
+        if (rating >= 5) return 'Average';
+        if (rating >= 4) return 'Below Average';
+        if (rating >= 3) return 'Poor';
+        return 'Very Poor';
+    };
+
+    if (!authenticated) {
         return (
-            <Container maxWidth="md" sx={{ py: 8 }}>
-                <Paper sx={{
-                    p: 6,
-                    textAlign: 'center',
+            <>
+                <Card sx={{
+                    background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
+                    border: '1px solid #333',
                     borderRadius: 3,
-                    background: (theme) => `linear-gradient(135deg, ${theme.palette.background.paper}, ${alpha(theme.palette.primary.main, 0.05)})`,
-                    border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                    boxShadow: (theme) => `0 8px 32px ${alpha(theme.palette.primary.main, 0.15)}`,
                 }}>
-                    <Typography variant="h3" sx={{
-                        color: 'primary.main',
-                        mb: 3,
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 1
-                    }}>
-                        🎉 Project Submitted Successfully!
+                    <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                        <Box sx={{
+                            width: 80,
+                            height: 80,
+                            borderRadius: '50%',
+                            background: 'linear-gradient(45deg, #00ff88, #4dffb0)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mx: 'auto',
+                            mb: 3,
+                            color: '#000',
+                            fontSize: '2rem',
+                        }}>
+                            🔐
+                        </Box>
+                        <Typography variant="h6" sx={{ color: '#00ff88', mb: 2, fontWeight: 'bold' }}>
+                            Login to Review {projectName}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#b0b0b0', mb: 3 }}>
+                            Share your thoughts and earn Believer Points by reviewing this project.
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            onClick={() => requireAuth(() => { }, 'submit reviews')}
+                            sx={{
+                                background: 'linear-gradient(45deg, #00ff88, #4dffb0)',
+                                color: '#000',
+                                fontWeight: 'bold',
+                                '&:hover': {
+                                    background: 'linear-gradient(45deg, #4dffb0, #00ff88)',
+                                    boxShadow: '0 4px 12px rgba(0, 255, 136, 0.3)',
+                                }
+                            }}
+                        >
+                            Login to Review
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <AuthDialog
+                    open={showAuthDialog}
+                    onClose={hideAuthDialog}
+                    onLogin={login}
+                    message={authMessage}
+                />
+            </>
+        );
+    }
+
+    if (checkingReview) {
+        return (
+            <Card sx={{
+                background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
+                border: '1px solid #333',
+                borderRadius: 3,
+            }}>
+                <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                    <CircularProgress size={40} sx={{ color: '#00ff88', mb: 2 }} />
+                    <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
+                        Checking review status...
                     </Typography>
-                    <Typography variant="body1" sx={{
-                        color: 'text.secondary',
-                        mb: 4,
-                        lineHeight: 1.6,
-                        fontSize: '1.1rem'
-                    }}>
-                        Your project has been submitted for community review. Our team will reach out within 24-48 hours with next steps.
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (hasReviewed) {
+        return (
+            <Card sx={{
+                background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
+                border: '1px solid #00ff88',
+                borderRadius: 3,
+            }}>
+                <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                    <CheckCircle sx={{ color: '#00ff88', fontSize: '3rem', mb: 2 }} />
+                    <Typography variant="h6" sx={{ color: '#00ff88', mb: 2, fontWeight: 'bold' }}>
+                        Thank You for Your Review!
                     </Typography>
-                    <SubmitButton
-                        loading={false}
-                        disabled={false}
-                        onClick={() => {
-                            setSubmitted(false);
-                            setError(null);
-                            setTeamMembers(['']);
+                    <Typography variant="body2" sx={{ color: '#b0b0b0', mb: 2 }}>
+                        You've already submitted a review for {projectName}. Your contribution helps the community make better decisions.
+                    </Typography>
+                    <Chip
+                        label="Review Submitted"
+                        sx={{
+                            backgroundColor: alpha('#00ff88', 0.1),
+                            color: '#00ff88',
+                            border: '1px solid #00ff88',
                         }}
                     />
-                </Paper>
-            </Container>
+                </CardContent>
+            </Card>
         );
     }
 
     return (
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Paper sx={{
-                p: { xs: 3, md: 4 },
+        <>
+            <Card sx={{
+                background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
+                border: '1px solid #333',
                 borderRadius: 3,
-                background: (theme) => `linear-gradient(135deg, ${theme.palette.background.paper}, ${alpha(theme.palette.primary.main, 0.02)})`,
-                border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                boxShadow: (theme) => `0 8px 32px ${alpha(theme.palette.primary.main, 0.1)}`,
             }}>
-                {error && (
-                    <Alert severity="error" sx={{
-                        mb: 3,
-                        borderRadius: 2,
-                        backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
-                        color: 'error.main',
-                        border: (theme) => `1px solid ${theme.palette.error.main}`,
-                        '& .MuiAlert-icon': {
-                            color: 'error.main',
-                        }
-                    }}>
-                        {error}
-                    </Alert>
-                )}
+                <CardContent sx={{ p: 4 }}>
+                    <Typography variant="h5" sx={{ color: '#00ff88', mb: 3, fontWeight: 'bold' }}>
+                        📊 Review {projectTicker}
+                    </Typography>
 
-                <Box component="form" onSubmit={handleSubmit(onSubmit)}>
-                    <Grid container spacing={4}>
-                        {/* Logo Upload Section */}
-                        <Grid size={{ xs: 12 }}>
-                            <LogoUploadSection
-                                logoFile={logoFile}
-                                logoPreview={logoPreview}
-                                uploadingLogo={uploadingLogo}
-                                onLogoChange={handleLogoChange}
-                                onRemoveLogo={removeLogo}
-                            />
-                        </Grid>
+                    {success && (
+                        <Alert
+                            severity="success"
+                            sx={{
+                                mb: 3,
+                                backgroundColor: alpha('#00ff88', 0.1),
+                                color: '#00ff88',
+                                border: '1px solid #00ff88'
+                            }}
+                        >
+                            Review submitted successfully! You earned {calculateEstimatedPoints()} Believer Points.
+                        </Alert>
+                    )}
 
-                        {/* Project Name */}
-                        <Grid size={{ xs: 12 }}>
-                            <FormTextField
-                                label="🚀 Project Name"
-                                placeholder="e.g. VaderAI"
-                                required
-                                register={register('name', { required: 'Project name is required' })}
-                                error={errors.name?.message}
-                            />
-                        </Grid>
+                    {error && (
+                        <Alert
+                            severity="error"
+                            sx={{
+                                mb: 3,
+                                backgroundColor: alpha('#ff6b6b', 0.1),
+                                color: '#ff6b6b',
+                                border: '1px solid #ff6b6b'
+                            }}
+                        >
+                            {error}
+                        </Alert>
+                    )}
 
-                        {/* Ticker and Category Row */}
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormTextField
-                                label="💰 Token Ticker"
-                                placeholder="VADER (without $)"
-                                required
-                                register={register('ticker', { required: 'Token ticker is required' })}
-                                error={errors.ticker?.message}
-                            />
-                        </Grid>
+                    <Box sx={{ mb: 4 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="h6" sx={{ color: 'white' }}>
+                                Rate This Project (1-10)
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Star sx={{ color: getRatingColor(rating) }} />
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        color: getRatingColor(rating),
+                                        fontWeight: 'bold'
+                                    }}
+                                >
+                                    {rating} - {getRatingLabel(rating)}
+                                </Typography>
+                            </Box>
+                        </Box>
+                        <Slider
+                            value={rating}
+                            onChange={(_, newValue) => setRating(newValue as number)}
+                            min={1}
+                            max={10}
+                            step={1}
+                            marks
+                            valueLabelDisplay="on"
+                            sx={{
+                                mb: 2,
+                                color: getRatingColor(rating),
+                                '& .MuiSlider-thumb': {
+                                    backgroundColor: getRatingColor(rating),
+                                    border: '2px solid #000',
+                                    '&:hover': {
+                                        boxShadow: `0 0 0 8px ${alpha(getRatingColor(rating), 0.16)}`,
+                                    }
+                                },
+                                '& .MuiSlider-track': {
+                                    backgroundColor: getRatingColor(rating),
+                                    background: `linear-gradient(90deg, ${getRatingColor(rating)}, ${getRatingColor(rating)}dd)`,
+                                },
+                                '& .MuiSlider-rail': {
+                                    backgroundColor: '#333',
+                                },
+                                '& .MuiSlider-mark': {
+                                    backgroundColor: '#666',
+                                },
+                                '& .MuiSlider-valueLabel': {
+                                    backgroundColor: getRatingColor(rating),
+                                    color: '#000',
+                                    fontWeight: 'bold',
+                                }
+                            }}
+                        />
+                    </Box>
 
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormSelect
-                                label="🏷️ Category"
-                                value={watch('category') || ''}
-                                options={categories}
-                                required
-                                register={register('category', { required: 'Category is required' })}
-                                error={errors.category?.message}
-                                onChange={(value) => setValue('category', value)}
-                            />
-                        </Grid>
+                    <Box sx={{ mb: 4 }}>
+                        <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
+                            Review Comment *
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={4}
+                            placeholder="Why do you believe in this project? Share your thoughts on the team, technology, market opportunity, or potential concerns..."
+                            value={comment}
+                            onChange={(e) => {
+                                setComment(e.target.value);
+                                setError(null);
+                            }}
+                            error={!!error && error.includes('comment')}
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    backgroundColor: alpha('#00ff88', 0.05),
+                                    '& fieldset': { borderColor: '#333' },
+                                    '&:hover fieldset': { borderColor: '#00ff88' },
+                                    '&.Mui-focused fieldset': {
+                                        borderColor: '#00ff88',
+                                        boxShadow: `0 0 0 2px ${alpha('#00ff88', 0.2)}`,
+                                    },
+                                },
+                                '& .MuiOutlinedInput-input': { color: 'white' },
+                            }}
+                        />
+                        <Typography variant="caption" sx={{ color: '#888', mt: 1, display: 'block' }}>
+                            {comment.length}/500 characters (minimum 10 required)
+                        </Typography>
+                    </Box>
 
-                        {/* Social Links Row */}
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormTextField
-                                label="🐦 Project Twitter Handle"
-                                placeholder="yourproject (without @)"
-                                required
-                                register={register('twitter', { required: 'Twitter handle is required' })}
-                                error={errors.twitter?.message}
-                            />
-                        </Grid>
+                    <Box sx={{ mb: 4 }}>
+                        <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
+                            Simulate Investment (in $BOB Points)
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            type="number"
+                            placeholder="e.g. 1500"
+                            value={investment}
+                            onChange={(e) => setInvestment(Number(e.target.value))}
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    backgroundColor: alpha('#00ff88', 0.05),
+                                    '& fieldset': { borderColor: '#333' },
+                                    '&:hover fieldset': { borderColor: '#00ff88' },
+                                    '&.Mui-focused fieldset': {
+                                        borderColor: '#00ff88',
+                                        boxShadow: `0 0 0 2px ${alpha('#00ff88', 0.2)}`,
+                                    },
+                                },
+                                '& .MuiOutlinedInput-input': { color: 'white' },
+                            }}
+                        />
 
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormTextField
-                                label="🌐 Website URL"
-                                placeholder="https://yourproject.xyz"
-                                required
-                                register={register('website', { required: 'Website URL is required' })}
-                                error={errors.website?.message}
-                            />
-                        </Grid>
-
-                        {/* GitHub */}
-                        <Grid size={{ xs: 12 }}>
-                            <FormTextField
-                                label="💻 GitHub / Code Repository"
-                                placeholder="https://github.com/project"
-                                required
-                                register={register('github', { required: 'GitHub repository is required' })}
-                                error={errors.github?.message}
-                            />
-                        </Grid>
-
-                        {/* Pitch */}
-                        <Grid size={{ xs: 12 }}>
-                            <FormTextField
-                                label="💡 Brief Project Pitch"
-                                placeholder="One-liner pitch and value prop..."
-                                multiline
-                                rows={4}
-                                required
-                                register={register('pitch', {
-                                    required: 'Pitch is required',
-                                    maxLength: { value: 2000, message: 'Pitch must be 2000 characters or less' }
-                                })}
-                                error={errors.pitch?.message}
-                                characterCount={{
-                                    current: pitchLength,
-                                    max: 2000
+                        {investment > 100000 && (
+                            <Alert
+                                severity="warning"
+                                sx={{
+                                    mt: 2,
+                                    backgroundColor: alpha('#ffa726', 0.1),
+                                    color: '#ffa726',
+                                    border: '1px solid #ffa726'
                                 }}
-                                onChange={(e) => {
-                                    setPitchLength(e.target.value.length);
-                                }}
-                            />
-                        </Grid>
+                                icon={<Warning />}
+                            >
+                                ⚠️ This project is considered oversubscribed after $100,000 total virtual pledges.
+                            </Alert>
+                        )}
 
-                        {/* Description */}
-                        <Grid size={{ xs: 12 }}>
-                            <FormTextField
-                                label="📋 Detailed Project Description"
-                                placeholder="Detailed explanation of your project, technology, roadmap, and team..."
-                                multiline
-                                rows={8}
-                                required
-                                register={register('description', {
-                                    required: 'Description is required',
-                                    maxLength: { value: 25000, message: 'Description must be 25000 characters or less' }
-                                })}
-                                error={errors.description?.message}
-                                characterCount={{
-                                    current: descriptionLength,
-                                    max: 25000
-                                }}
-                                onChange={(e) => {
-                                    setDescriptionLength(e.target.value.length);
-                                }}
-                            />
-                        </Grid>
+                        <Box sx={{ mt: 2, p: 2, backgroundColor: alpha('#00ff88', 0.05), borderRadius: 2, border: '1px solid #00ff88' }}>
+                            <Typography variant="body2" sx={{ color: '#00ff88', fontWeight: 'bold', mb: 1 }}>
+                                💎 Estimated Believer Points: {calculateEstimatedPoints()}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#888' }}>
+                                Points breakdown: Rating ({rating * 10}) + Investment tier + Performance bonus
+                            </Typography>
+                        </Box>
+                    </Box>
 
-                        {/* Team Members */}
-                        <Grid size={{ xs: 12 }}>
-                            <TeamMembersSection
-                                teamMembers={teamMembers}
-                                onAddMember={addTeamMember}
-                                onRemoveMember={removeTeamMember}
-                                onUpdateMember={updateTeamMember}
-                            />
-                        </Grid>
+                    <Button
+                        variant="contained"
+                        size="large"
+                        fullWidth
+                        onClick={handleSubmit}
+                        disabled={loading || !comment.trim() || comment.length < 10}
+                        sx={{
+                            py: 2,
+                            background: 'linear-gradient(45deg, #00ff88, #4dffb0)',
+                            color: '#000',
+                            fontWeight: 'bold',
+                            fontSize: '1.1rem',
+                            '&:hover': {
+                                background: 'linear-gradient(45deg, #4dffb0, #00ff88)',
+                                boxShadow: '0 4px 12px rgba(0, 255, 136, 0.3)',
+                            },
+                            '&:disabled': {
+                                background: alpha('#666', 0.3),
+                                color: alpha('#fff', 0.5),
+                            }
+                        }}
+                    >
+                        {loading ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <CircularProgress size={20} sx={{ color: 'inherit' }} />
+                                Submitting Review...
+                            </Box>
+                        ) : (
+                            '📝 Submit Review & Investment'
+                        )}
+                    </Button>
 
-                        {/* Launch Date and Twitter Space */}
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormTextField
-                                label="📅 Planned Launch Date & Time"
-                                type="datetime-local"
-                                required
-                                register={register('launchDate', { required: 'Launch date and time is required' })}
-                                error={errors.launchDate?.message}
-                                helperText="Select your preferred launch date and time (local timezone)"
-                                InputLabelProps={{ shrink: true }}
-                            />
-                        </Grid>
+                    <Typography variant="caption" sx={{ color: '#888', textAlign: 'center', display: 'block', mt: 2 }}>
+                        Your review will be public and help other believers make informed decisions.
+                    </Typography>
+                </CardContent>
+            </Card>
 
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormSelect
-                                label="🎤 Request Twitter Space for Launch?"
-                                value={watch('requestTwitterSpace') || ''}
-                                options={[
-                                    { value: 'true', label: 'Yes - Please Coordinate' },
-                                    { value: 'false', label: 'No - We\'ll handle it' }
-                                ]}
-                                required
-                                register={register('requestTwitterSpace', { required: 'Twitter Space preference is required' })}
-                                error={errors.requestTwitterSpace?.message}
-                                onChange={(value) => setValue('requestTwitterSpace', value)}
-                            />
-                        </Grid>
-
-                        {/* Whitepaper */}
-                        <Grid size={{ xs: 12 }}>
-                            <FormTextField
-                                label="📄 Whitepaper / Litepaper Link"
-                                placeholder="https://docs.yourproject.xyz"
-                                required
-                                register={register('whitepaper', { required: 'Whitepaper link is required' })}
-                                error={errors.whitepaper?.message}
-                            />
-                        </Grid>
-
-                        {/* Checklist */}
-                        <Grid size={{ xs: 12 }}>
-                            <ProjectChecklist checklistItems={checklistItems} />
-                        </Grid>
-
-                        {/* Submit Button */}
-                        <Grid size={{ xs: 12 }}>
-                            <SubmitButton
-                                loading={loading}
-                                disabled={pitchLength > 2000 || descriptionLength > 25000}
-                            />
-                        </Grid>
-                    </Grid>
-                </Box>
-            </Paper>
-        </Container>
+            <AuthDialog
+                open={showAuthDialog}
+                onClose={hideAuthDialog}
+                onLogin={login}
+                message={authMessage}
+            />
+        </>
     );
 }

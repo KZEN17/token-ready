@@ -4,6 +4,8 @@ import {
     Container,
     Box,
     Grid,
+    Alert,
+    alpha,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { databases, DATABASE_ID, PROJECTS_COLLECTION_ID } from '@/lib/appwrite';
@@ -13,7 +15,8 @@ import ProjectHeader from '@/components/projects/ProjectHeader';
 import ProjectInfo from '@/components/projects/ProjectInfo';
 import ProjectReviewForm from '@/components/projects/ProjectReviewForm';
 import RecentReviews from '@/components/projects/RecentReviews';
-
+import { ReviewService } from '@/lib/reviewService';
+import { useUser } from '@/hooks/useUser';
 
 interface Project {
     $id: string;
@@ -38,14 +41,27 @@ interface Project {
     createdAt: string;
 }
 
+interface ReviewStats {
+    totalReviews: number;
+    averageRating: number;
+    totalInvestment: number;
+    totalBelieverPoints: number;
+}
+
 export default function ProjectDetailsPage() {
     const { id } = useParams<{ id: string }>();
+    const { user, authenticated, updateUserPoints } = useUser();
+
     const [project, setProject] = useState<Project | null>(null);
+    const [reviewStats, setReviewStats] = useState<ReviewStats>({
+        totalReviews: 0,
+        averageRating: 0,
+        totalInvestment: 0,
+        totalBelieverPoints: 0,
+    });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    // TODO: Get actual user ID from authentication
-    const currentUserId = 'user_123';
+    const [reviewsKey, setReviewsKey] = useState(0); // Force re-render of reviews
 
     // Fetch project data
     useEffect(() => {
@@ -69,13 +85,40 @@ export default function ProjectDetailsPage() {
         fetchProject();
     }, [id]);
 
-    const handleUpvote = async () => {
-        if (!project) return;
+    // Fetch review statistics
+    useEffect(() => {
+        const fetchReviewStats = async () => {
+            if (!project) return;
 
-        const isUpvoted = project.upvotes.includes(currentUserId);
+            try {
+                const stats = await ReviewService.getProjectReviewStats(project.$id);
+                setReviewStats(stats);
+
+                // Update project with latest review count if different
+                if (stats.totalReviews !== project.reviews) {
+                    // Optionally update the project in the database
+                    // await databases.updateDocument(DATABASE_ID, PROJECTS_COLLECTION_ID, project.$id, {
+                    //     reviews: stats.totalReviews
+                    // });
+
+                    // Update local state
+                    setProject(prev => prev ? { ...prev, reviews: stats.totalReviews } : null);
+                }
+            } catch (error) {
+                console.error('Error fetching review stats:', error);
+            }
+        };
+
+        fetchReviewStats();
+    }, [project, reviewsKey]);
+
+    const handleUpvote = async () => {
+        if (!project || !authenticated || !user) return;
+
+        const isUpvoted = project.upvotes.includes(user.$id);
         const newUpvotes = isUpvoted
-            ? project.upvotes.filter(id => id !== currentUserId)
-            : [...project.upvotes, currentUserId];
+            ? project.upvotes.filter(id => id !== user.$id)
+            : [...project.upvotes, user.$id];
 
         // Update local state immediately for better UX
         setProject({ ...project, upvotes: newUpvotes });
@@ -95,10 +138,46 @@ export default function ProjectDetailsPage() {
         }
     };
 
-    const handleSubmitReview = async (reviewData: { rating: number; review: string; investment: number }) => {
-        console.log('Submitting review:', reviewData);
-        // TODO: Submit to database
-        // Could show success message, update review count, etc.
+    const handleReviewSubmitted = async (review: any) => {
+        console.log('Review submitted:', review);
+
+        // Only update user points if they weren't already updated
+        if (!review.pointsAlreadyUpdated && updateUserPoints) {
+            try {
+                await updateUserPoints(0, review.believerPoints);
+            } catch (error) {
+                console.error('Error updating user points:', error);
+                // Don't fail if points update fails
+            }
+        }
+
+        // Force refresh of review stats and reviews list
+        setReviewsKey(prev => prev + 1);
+
+        // Optionally update project stats in database
+        try {
+            const newStats = await ReviewService.getProjectReviewStats(project!.$id);
+
+            // Update project with new stats
+            await databases.updateDocument(
+                DATABASE_ID,
+                PROJECTS_COLLECTION_ID,
+                project!.$id,
+                {
+                    reviews: newStats.totalReviews,
+                    // You could also update other fields like average rating if you store it
+                }
+            );
+
+            // Update local project state
+            setProject(prev => prev ? {
+                ...prev,
+                reviews: newStats.totalReviews,
+            } : null);
+
+        } catch (error) {
+            console.error('Error updating project stats:', error);
+        }
     };
 
     if (loading) {
@@ -108,6 +187,8 @@ export default function ProjectDetailsPage() {
     if (error || !project) {
         return <ProjectError error={error || 'Project not found'} />;
     }
+
+    const currentUserId = user?.$id || 'anonymous';
 
     return (
         <Box sx={{
@@ -127,23 +208,89 @@ export default function ProjectDetailsPage() {
                         />
                     </Grid>
 
+                    {/* Review Statistics Display */}
+                    {reviewStats.totalReviews > 0 && (
+                        <Grid size={{ xs: 12 }}>
+                            <Box sx={{
+                                p: 3,
+                                background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
+                                border: '1px solid #333',
+                                borderRadius: 3,
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                flexWrap: 'wrap',
+                                gap: 2,
+                            }}>
+                                <Box sx={{ textAlign: 'center' }}>
+                                    <Box sx={{ color: '#00ff88', fontWeight: 'bold', fontSize: '1.5rem' }}>
+                                        {reviewStats.totalReviews}
+                                    </Box>
+                                    <Box sx={{ color: '#888', fontSize: '0.9rem' }}>Reviews</Box>
+                                </Box>
+                                <Box sx={{ textAlign: 'center' }}>
+                                    <Box sx={{ color: '#ffa726', fontWeight: 'bold', fontSize: '1.5rem' }}>
+                                        {reviewStats.averageRating}/10
+                                    </Box>
+                                    <Box sx={{ color: '#888', fontSize: '0.9rem' }}>Avg Rating</Box>
+                                </Box>
+                                <Box sx={{ textAlign: 'center' }}>
+                                    <Box sx={{ color: '#ff6b6b', fontWeight: 'bold', fontSize: '1.5rem' }}>
+                                        {reviewStats.totalInvestment.toLocaleString()}
+                                    </Box>
+                                    <Box sx={{ color: '#888', fontSize: '0.9rem' }}>Total Pledged</Box>
+                                </Box>
+                                <Box sx={{ textAlign: 'center' }}>
+                                    <Box sx={{ color: '#00ff88', fontWeight: 'bold', fontSize: '1.5rem' }}>
+                                        {reviewStats.totalBelieverPoints.toLocaleString()}
+                                    </Box>
+                                    <Box sx={{ color: '#888', fontSize: '0.9rem' }}>Community Points</Box>
+                                </Box>
+                            </Box>
+                        </Grid>
+                    )}
+
                     {/* Project Review Form */}
                     <Grid size={{ xs: 12, md: 8 }}>
                         <ProjectReviewForm
+                            projectId={project.$id}
                             projectTicker={project.ticker}
-                            onSubmitReview={handleSubmitReview}
+                            projectName={project.name}
+                            onReviewSubmitted={handleReviewSubmitted}
                         />
                     </Grid>
 
                     {/* Recent Reviews Sidebar */}
                     <Grid size={{ xs: 12, md: 4 }}>
-                        <RecentReviews />
+                        <RecentReviews
+                            key={reviewsKey} // Force re-render when reviews change
+                            projectId={project.$id}
+                            limit={5}
+                        />
                     </Grid>
 
                     {/* Detailed Project Information */}
                     <Grid size={{ xs: 12 }}>
                         <ProjectInfo project={project} />
                     </Grid>
+
+                    {/* Additional Reviews Section for larger lists */}
+                    {reviewStats.totalReviews > 5 && (
+                        <Grid size={{ xs: 12 }}>
+                            <Alert
+                                severity="info"
+                                sx={{
+                                    backgroundColor: alpha('#00ff88', 0.1),
+                                    color: '#00ff88',
+                                    border: '1px solid #00ff88',
+                                    borderRadius: 2,
+                                }}
+                            >
+                                This project has {reviewStats.totalReviews} reviews.
+                                Showing the 5 most recent above. More detailed review analytics coming soon!
+                            </Alert>
+                        </Grid>
+                    )}
                 </Grid>
             </Container>
         </Box>
