@@ -1,4 +1,4 @@
-// src/components/common/Header.tsx
+// src/components/common/Header.tsx (Fixed with Believer Points Integration)
 'use client';
 
 import {
@@ -29,9 +29,12 @@ import {
     AccountBox,
     Stars,
     TrendingUp,
+    LocalFireDepartment,
 } from '@mui/icons-material';
 import Logo from './Logo';
+import BelieverPointsWidget from './BelieverPointsWidget';
 import { useUser } from '@/hooks/useUser';
+import { useBelieverPoints } from '@/hooks/useBelieverPoints';
 
 export default function Header() {
     const theme = useTheme();
@@ -42,8 +45,6 @@ export default function Header() {
         authenticated,
         loading,
         hasTwitter,
-        // hasWallet,
-        // walletAddress,
         userDisplayName,
         userAvatar,
         isKOL,
@@ -52,6 +53,8 @@ export default function Header() {
         connectTwitter,
         ready
     } = useUser();
+
+    const { totalPoints, rank } = useBelieverPoints();
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -68,10 +71,6 @@ export default function Header() {
     const handleLogout = async () => {
         await logout();
         handleMenuClose();
-    };
-
-    const formatWalletAddress = (address: string) => {
-        return `${address.slice(0, 4)}...${address.slice(-4)}`;
     };
 
     // Show loading state while Privy is initializing
@@ -198,6 +197,7 @@ export default function Header() {
                                     borderRadius: 2,
                                     px: 2,
                                     py: 1,
+                                    position: 'relative',
                                     '&:hover': {
                                         backgroundColor: 'rgba(0, 255, 136, 0.1)',
                                         color: theme.palette.primary.main,
@@ -206,6 +206,23 @@ export default function Header() {
                                 }}
                             >
                                 Submit Project
+                                {/* Points indicator */}
+                                <Chip
+                                    label="+250"
+                                    size="small"
+                                    sx={{
+                                        position: 'absolute',
+                                        top: -6,
+                                        right: -6,
+                                        backgroundColor: '#00ff88',
+                                        color: '#000',
+                                        fontSize: '0.6rem',
+                                        height: 16,
+                                        minWidth: 28,
+                                        fontWeight: 'bold',
+                                        '& .MuiChip-label': { px: 0.5 }
+                                    }}
+                                />
                             </Button>
                         </Link>
                         <Link href="/staking" passHref>
@@ -246,7 +263,6 @@ export default function Header() {
                                         transform: 'translateY(-1px)',
                                     },
                                 }}
-
                             >
                                 Leaderboard
                             </Button>
@@ -285,67 +301,13 @@ export default function Header() {
                                 {loading ? 'Connecting...' : 'Login with X'}
                             </Button>
                         ) : (
-                            // Authenticated - show user profile and wallet
+                            // Authenticated - show believer points widget and user profile
                             <>
-                                {/* Wallet Connection Status */}
-                                <></>
-                                {/* {hasWallet ? (
-                                    <Chip
-                                        icon={<AccountBalanceWallet />}
-                                        label={formatWalletAddress(walletAddress!)}
-                                        size="small"
-                                        color="success"
-                                        sx={{
-                                            fontSize: { xs: '0.7rem', md: '0.75rem' },
-                                            display: { xs: 'none', sm: 'flex' },
-                                            backgroundColor: 'rgba(0, 255, 136, 0.1)',
-                                            border: '1px solid rgba(0, 255, 136, 0.3)',
-                                        }}
-                                    />
-                                ) : (
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        startIcon={<AccountBalanceWallet />}
-                                        sx={{
-                                            fontSize: { xs: '0.7rem', md: '0.75rem' },
-                                            display: { xs: 'none', sm: 'flex' },
-                                            borderColor: 'rgba(0, 255, 136, 0.5)',
-                                            color: theme.palette.primary.main,
-                                        }}
-                                    >
-                                        Connect Wallet
-                                    </Button>
-                                )} */}
+                                {/* Believer Points Widget */}
+                                <BelieverPointsWidget compact={true} showRank={true} />
 
                                 {/* User Menu */}
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    {/* User Points - Desktop only */}
-                                    <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
-                                        <Chip
-                                            icon={<Stars />}
-                                            label={`${user?.bobPoints || 0} BOB`}
-                                            size="small"
-                                            sx={{
-                                                fontSize: '0.75rem',
-                                                backgroundColor: 'rgba(0, 255, 136, 0.1)',
-                                                color: theme.palette.primary.main,
-                                                border: '1px solid rgba(0, 255, 136, 0.3)',
-                                            }}
-                                        />
-                                        <Chip
-                                            icon={<TrendingUp />}
-                                            label={`${user?.believerPoints || 0} BP`}
-                                            size="small"
-                                            sx={{
-                                                fontSize: '0.75rem',
-                                                backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                                                color: theme.palette.secondary.main,
-                                                border: '1px solid rgba(255, 107, 107, 0.3)',
-                                            }}
-                                        />
-                                    </Box>
-
                                     {/* User Avatar and Name */}
                                     <Box
                                         sx={{
@@ -402,7 +364,7 @@ export default function Header() {
                                                 <Typography variant="caption" sx={{
                                                     color: 'rgba(255, 255, 255, 0.6)'
                                                 }}>
-                                                    @{user?.twitterHandle}
+                                                    @{user?.username}
                                                 </Typography>
                                             )}
                                         </Box>
@@ -424,7 +386,7 @@ export default function Header() {
                                     }}
                                     sx={{
                                         '& .MuiPaper-root': {
-                                            minWidth: 240,
+                                            minWidth: 280,
                                             mt: 1.5,
                                             background: 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)',
                                             border: '1px solid rgba(0, 255, 136, 0.2)',
@@ -453,15 +415,15 @@ export default function Header() {
                                         </Typography>
                                         {hasTwitter && (
                                             <Typography variant="body2" color="text.secondary">
-                                                @{user?.twitterHandle} • {user?.followerCount.toLocaleString()} followers
+                                                @{user?.username} • {user?.followerCount?.toLocaleString()} followers
                                             </Typography>
                                         )}
 
-                                        {/* Points */}
+                                        {/* Believer Points in Menu */}
                                         <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                                             <Chip
-                                                icon={<Stars />}
-                                                label={`${user?.bobPoints || 0} BOB Points`}
+                                                icon={<LocalFireDepartment />}
+                                                label={`${user?.believerPoints?.toLocaleString() || 0} Believer Points`}
                                                 size="small"
                                                 sx={{
                                                     fontSize: '0.7rem',
@@ -471,14 +433,28 @@ export default function Header() {
                                                 }}
                                             />
                                             <Chip
-                                                icon={<TrendingUp />}
-                                                label={`${user?.believerPoints || 0} Believer Points`}
+                                                label={user?.believerRank || 'Believer'}
                                                 size="small"
                                                 sx={{
                                                     fontSize: '0.7rem',
-                                                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                                                    color: theme.palette.secondary.main,
-                                                    border: '1px solid rgba(255, 107, 107, 0.3)',
+                                                    backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                                                    color: theme.palette.primary.main,
+                                                    border: '1px solid rgba(0, 255, 136, 0.3)',
+                                                }}
+                                            />
+                                        </Box>
+
+                                        {/* Legacy points for compatibility */}
+                                        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                                            <Chip
+                                                icon={<Stars />}
+                                                label={`${user?.bobPoints || 0} BOB`}
+                                                size="small"
+                                                sx={{
+                                                    fontSize: '0.7rem',
+                                                    backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                                                    color: theme.palette.primary.main,
+                                                    border: '1px solid rgba(0, 255, 136, 0.3)',
                                                 }}
                                             />
                                         </Box>
@@ -499,6 +475,15 @@ export default function Header() {
                                         <TrendingUp sx={{ mr: 2, color: theme.palette.primary.main }} />
                                         My Projects ({user?.projectsSupported || 0})
                                     </MenuItem>
+                                    <MenuItem
+                                        component={Link}
+                                        href="/leaderboard"
+                                        onClick={handleMenuClose}
+                                        sx={{ '&:hover': { backgroundColor: 'rgba(0, 255, 136, 0.1)' } }}
+                                    >
+                                        <LocalFireDepartment sx={{ mr: 2, color: theme.palette.primary.main }} />
+                                        Believer Dashboard
+                                    </MenuItem>
 
                                     {/* Connect X if not connected */}
                                     {!hasTwitter && (
@@ -507,14 +492,6 @@ export default function Header() {
                                             Connect X Account
                                         </MenuItem>
                                     )}
-
-                                    {/* Connect Wallet if not connected */}
-                                    {/* {!hasWallet && (
-                                        <MenuItem onClick={handleMenuClose} sx={{ '&:hover': { backgroundColor: 'rgba(0, 255, 136, 0.1)' } }}>
-                                            <AccountBalanceWallet sx={{ mr: 2, color: theme.palette.primary.main }} />
-                                            Connect Wallet
-                                        </MenuItem>
-                                    )} */}
 
                                     <MenuItem onClick={handleMenuClose} sx={{ '&:hover': { backgroundColor: 'rgba(0, 255, 136, 0.1)' } }}>
                                         <Settings sx={{ mr: 2, color: theme.palette.primary.main }} />

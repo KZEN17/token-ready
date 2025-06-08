@@ -1,4 +1,4 @@
-// src/components/projects/ProjectCard.tsx (Updated with Auth Guards)
+// src/components/projects/ProjectCard.tsx (Updated with Believer Points Integration)
 'use client';
 
 import {
@@ -13,6 +13,8 @@ import {
     Stack,
     Grid,
     alpha,
+    Snackbar,
+    Alert,
 } from '@mui/material';
 import {
     ThumbUp,
@@ -26,8 +28,11 @@ import {
     Star,
     People,
     AccountBalanceWallet,
+    Add,
 } from '@mui/icons-material';
+import { useState } from 'react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { useBelieverActions } from '@/hooks/useBelieverPoints';
 import AuthDialog from '@/components/auth/AuthDialog';
 
 interface Project {
@@ -71,6 +76,17 @@ export default function ProjectCard({
     onReview,
 }: ProjectCardProps) {
     const { requireAuth, showAuthDialog, hideAuthDialog, authMessage, login } = useAuthGuard();
+    const { awardUpvotePoints, canPerformAction } = useBelieverActions();
+
+    const [pointsSnackbar, setPointsSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: 'success' | 'error';
+    }>({
+        open: false,
+        message: '',
+        severity: 'success'
+    });
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -89,10 +105,42 @@ export default function ProjectCard({
 
     const isUpvoted = project.upvotes.includes(currentUserId);
 
-    const handleUpvote = (e: React.MouseEvent) => {
+    const handleUpvote = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        requireAuth(() => onUpvote(project.$id), 'upvote projects');
+
+        requireAuth(async () => {
+            try {
+                // Check if user can perform upvote action
+                const canUpvote = await canPerformAction('upvote_project');
+
+                if (!canUpvote.canPerform) {
+                    setPointsSnackbar({
+                        open: true,
+                        message: canUpvote.reason || 'Cannot upvote at this time',
+                        severity: 'error'
+                    });
+                    return;
+                }
+
+                // Perform the upvote
+                onUpvote(project.$id);
+
+                // Award believer points (only if not already upvoted)
+                if (!isUpvoted) {
+                    await awardUpvotePoints(project.$id);
+                    setPointsSnackbar({
+                        open: true,
+                        message: '+75 Believer Points for upvoting! 🎉',
+                        severity: 'success'
+                    });
+                }
+            } catch (error) {
+                console.error('Error awarding upvote points:', error);
+                // Still perform the upvote even if points fail
+                onUpvote(project.$id);
+            }
+        }, 'upvote projects');
     };
 
     const handleToggleFavorite = (e: React.MouseEvent) => {
@@ -104,6 +152,10 @@ export default function ProjectCard({
     const handleReview = (e: React.MouseEvent) => {
         e.stopPropagation();
         requireAuth(() => onReview(project.$id), 'review projects');
+    };
+
+    const handleCloseSnackbar = () => {
+        setPointsSnackbar(prev => ({ ...prev, open: false }));
     };
 
     return (
@@ -177,6 +229,7 @@ export default function ProjectCard({
                                 onClick={handleUpvote}
                                 sx={{
                                     color: isUpvoted ? '#00ff88' : '#666',
+                                    position: 'relative',
                                     '&:hover': {
                                         color: '#00ff88',
                                         transform: 'scale(1.1)',
@@ -184,6 +237,25 @@ export default function ProjectCard({
                                 }}
                             >
                                 {isUpvoted ? <ThumbUp /> : <ThumbUpOutlined />}
+                                {/* Points indicator */}
+                                {!isUpvoted && (
+                                    <Chip
+                                        label="+75"
+                                        size="small"
+                                        sx={{
+                                            position: 'absolute',
+                                            top: -8,
+                                            right: -8,
+                                            backgroundColor: '#00ff88',
+                                            color: '#000',
+                                            fontSize: '0.6rem',
+                                            height: 16,
+                                            minWidth: 24,
+                                            fontWeight: 'bold',
+                                            '& .MuiChip-label': { px: 0.5 }
+                                        }}
+                                    />
+                                )}
                             </IconButton>
                             <IconButton
                                 onClick={handleToggleFavorite}
@@ -359,6 +431,7 @@ export default function ProjectCard({
                                 fontWeight: 'bold',
                                 fontSize: '0.8rem',
                                 py: 1,
+                                position: 'relative',
                                 '&:hover': {
                                     backgroundColor: alpha('#ff6b6b', 0.1),
                                     borderColor: '#ff6b6b',
@@ -367,6 +440,23 @@ export default function ProjectCard({
                             }}
                         >
                             Review
+                            {/* Points indicator for review */}
+                            <Chip
+                                label="+100"
+                                size="small"
+                                sx={{
+                                    position: 'absolute',
+                                    top: -8,
+                                    right: -8,
+                                    backgroundColor: '#ff6b6b',
+                                    color: '#000',
+                                    fontSize: '0.6rem',
+                                    height: 16,
+                                    minWidth: 24,
+                                    fontWeight: 'bold',
+                                    '& .MuiChip-label': { px: 0.5 }
+                                }}
+                            />
                         </Button>
                         <IconButton
                             size="medium"
@@ -413,6 +503,27 @@ export default function ProjectCard({
                     </Stack>
                 </CardContent>
             </Card>
+
+            {/* Points Notification Snackbar */}
+            <Snackbar
+                open={pointsSnackbar.open}
+                autoHideDuration={4000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    onClose={handleCloseSnackbar}
+                    severity={pointsSnackbar.severity}
+                    variant="filled"
+                    sx={{
+                        backgroundColor: pointsSnackbar.severity === 'success' ? '#00ff88' : '#ff6b6b',
+                        color: '#000',
+                        fontWeight: 'bold',
+                    }}
+                >
+                    {pointsSnackbar.message}
+                </Alert>
+            </Snackbar>
 
             {/* Auth Dialog */}
             <AuthDialog

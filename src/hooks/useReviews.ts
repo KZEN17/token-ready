@@ -1,9 +1,10 @@
-// src/hooks/useReviews.ts
+// src/hooks/useReviews.ts (Fixed)
 'use client';
 
 import { useState, useEffect } from 'react';
 import { ReviewService, Review, ReviewWithUser } from '@/lib/reviewService';
 import { useUser } from './useUser';
+import { useBelieverActions } from './useBelieverPoints';
 
 interface UseReviewsOptions {
     projectId?: string;
@@ -40,7 +41,8 @@ export const useReviews = ({
     limit = 10,
     autoFetch = true
 }: UseReviewsOptions = {}): UseReviewsReturn => {
-    const { user, authenticated } = useUser();
+    const { user, authenticated, updateUserPoints } = useUser();
+    const { awardReviewPoints } = useBelieverActions();
 
     const [reviews, setReviews] = useState<ReviewWithUser[]>([]);
     const [loading, setLoading] = useState(false);
@@ -131,9 +133,23 @@ export const useReviews = ({
                 userId: user.$id,
             });
 
-            // Update user points
-            if (user.updateUserPoints) {
-                await user.updateUserPoints(0, review.believerPoints);
+            // Award believer points for writing a review
+            try {
+                await awardReviewPoints(projectId, reviewData.rating, reviewData.investment);
+                console.log('✅ Awarded believer points for review');
+            } catch (pointsError) {
+                console.error('Error awarding believer points:', pointsError);
+                // Don't fail the review submission if points fail
+            }
+
+            // Also update legacy points if available
+            if (updateUserPoints) {
+                try {
+                    await updateUserPoints(0, review.believerPoints);
+                } catch (legacyPointsError) {
+                    console.error('Error updating legacy points:', legacyPointsError);
+                    // Don't fail if legacy points update fails
+                }
             }
 
             // Refresh data

@@ -172,9 +172,9 @@ export default function ExplorePage() {
             );
 
             // Award user points for upvoting (optional)
-            if (!isCurrentlyUpvoted && user.updateUserPoints) {
-                await user.updateUserPoints(1, 5); // 1 BOB point, 5 believer points
-            }
+            // if (!isCurrentlyUpvoted && user.updateUserPoints) {
+            //     await user.updateUserPoints(1, 5); // 1 BOB point, 5 believer points
+            // }
         } catch (error) {
             console.error('Failed to update upvote:', error);
             // Revert local state on error

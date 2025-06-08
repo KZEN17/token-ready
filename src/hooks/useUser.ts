@@ -1,35 +1,35 @@
+// src/hooks/useUser.ts (Updated to sync believer points)
 'use client';
 
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { databases, DATABASE_ID, USERS_COLLECTION_ID } from '../lib/appwrite';
 import { ID, Query } from 'appwrite';
 
 interface User {
-    updateUserPoints: any;
     $id: string;
 
     // Core user info (required fields)
-    username: string;           // X username without @
-    displayName: string;        // X display name
-    profileImage: string;       // X profile picture URL
-    followerCount: number;      // X follower count
-    verified: boolean;          // X verification status
+    username: string;
+    displayName: string;
+    profileImage: string;
+    followerCount: number;
+    verified: boolean;
 
     // Points and ranking (required)
-    believerPoints: number;     // Believer points earned
-    believerRank: string;       // Rank based on believer points
+    believerPoints: number;
+    believerRank: string;
 
     // Timestamps (required)
-    joinedAt: string;          // When user joined
-    lastActiveAt: string;      // Last activity
+    joinedAt: string;
+    lastActiveAt: string;
 
     // Optional profile info
-    bio?: string;              // User bio
-    location?: string;         // User location
+    bio?: string;
+    location?: string;
 
     // Privy integration (required)
-    privyUserId: string;       // Link to Privy user ID
+    privyUserId: string;
 
     // Legacy/compatibility fields (optional)
     twitterHandle?: string;
@@ -38,27 +38,28 @@ interface User {
 
     // Wallet and points (with defaults)
     walletAddress?: string;
-    bobPoints: number;         // Default 0
-    totalStaked: number;       // Default 0
-    reviewsCount: number;      // Default 0
-    projectsSupported: number; // Default 0
-    isVerifiedKOL: boolean;    // Default false
+    bobPoints: number;
+    totalStaked: number;
+    reviewsCount: number;
+    projectsSupported: number;
+    isVerifiedKOL: boolean;
 
     // Legacy field
-    createdAt: string;         // Maps to joinedAt
-
-    // Remove the updateUserPoints method from the User interface
+    createdAt: string;
 }
 
 // Helper function to calculate believer rank
 const calculateBelieverRank = (points: number): string => {
-    if (points >= 10000) return 'Legend';
-    if (points >= 5000) return 'Expert';
-    if (points >= 2500) return 'Veteran';
-    if (points >= 1000) return 'Advanced';
-    if (points >= 500) return 'Intermediate';
-    if (points >= 100) return 'Novice';
-    return 'Newcomer';
+    if (points >= 100000) return 'The Belief Engine';
+    if (points >= 50000) return 'Inner Circle';
+    if (points >= 25000) return 'Cult Leader';
+    if (points >= 15000) return 'Cult Starter';
+    if (points >= 10000) return 'Super Scout';
+    if (points >= 5000) return 'Scout';
+    if (points >= 2500) return 'Curator';
+    if (points >= 1000) return 'Signal Giver';
+    if (points >= 500) return 'Committed';
+    return 'Believer';
 };
 
 export const useUser = () => {
@@ -84,7 +85,6 @@ export const useUser = () => {
 
     // Update user points function
     const updateUserPoints = async (bobPointsToAdd: number, believerPointsToAdd: number): Promise<void> => {
-        // Get the current user from state
         const currentUser = user;
         if (!currentUser) {
             throw new Error('No user found');
@@ -107,14 +107,13 @@ export const useUser = () => {
                 }
             );
 
-            // Update local state
+            // Update local state immediately
             setUser(prev => prev ? {
                 ...prev,
                 bobPoints: newBobPoints,
                 believerPoints: newBelieverPoints,
                 believerRank: newBelieverRank,
                 lastActiveAt: new Date().toISOString(),
-                updateUserPoints, // Re-attach the method
             } : null);
 
         } catch (err) {
@@ -123,6 +122,23 @@ export const useUser = () => {
             throw err;
         }
     };
+
+    // Refresh user data from database
+    const refreshUserData = useCallback(async () => {
+        if (!authenticated || !privyUser || !user) return;
+
+        try {
+            const refreshedUser = await databases.getDocument(
+                DATABASE_ID,
+                USERS_COLLECTION_ID,
+                user.$id
+            );
+
+            setUser(refreshedUser as unknown as User);
+        } catch (err) {
+            console.error('Error refreshing user data:', err);
+        }
+    }, [authenticated, privyUser, user]);
 
     // Create or update user in Appwrite when Privy user changes
     useEffect(() => {
@@ -172,7 +188,7 @@ export const useUser = () => {
 
                         // Update KOL status and believer rank
                         updateData.isVerifiedKOL = ((twitterAccount as any).followersCount || 0) > 1000;
-                        updateData.believerRank = calculateBelieverRank(existingUser.believerPoints);
+                        updateData.believerRank = calculateBelieverRank(existingUser.believerPoints || 0);
                     }
 
                     const updatedUser = await databases.updateDocument(
@@ -185,7 +201,7 @@ export const useUser = () => {
                     appwriteUser = updatedUser as unknown as User;
                 } else {
                     // Create new user - all required fields must be provided
-                    const newUserData: Omit<User, '$id' | 'updateUserPoints'> = {
+                    const newUserData: Omit<User, '$id'> = {
                         // Required core info
                         username: twitterAccount?.username || 'anonymous',
                         displayName: twitterAccount?.name || 'Anonymous User',
@@ -235,7 +251,6 @@ export const useUser = () => {
                     appwriteUser = createdUser as unknown as User;
                 }
 
-                // Set user without updateUserPoints method
                 setUser(appwriteUser);
             } catch (err) {
                 console.error('Error syncing user:', err);
@@ -323,12 +338,13 @@ export const useUser = () => {
         // User management
         updateUserPoints,
         updateUserProfile,
+        refreshUserData,
 
         // Helper methods
         isKOL: user?.isVerifiedKOL || false,
         userDisplayName: user?.displayName || user?.username || 'Anonymous',
         userAvatar: user?.profileImage || null,
-        believerRank: user?.believerRank || 'Newcomer',
+        believerRank: user?.believerRank || 'Believer',
         isVerified: user?.verified || false,
     };
 };
