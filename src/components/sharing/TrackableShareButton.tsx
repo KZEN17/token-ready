@@ -1,4 +1,4 @@
-// src/components/sharing/TrackableShareButton.tsx
+// src/components/sharing/TrackableShareButton.tsx - FIXED VERSION
 'use client';
 
 import { useState } from 'react';
@@ -11,11 +11,15 @@ import {
     Chip,
 } from '@mui/material';
 import { X } from '@mui/icons-material';
-import { TrackableShareService } from '@/lib/trackableShareService';
+import { databases, DATABASE_ID } from '@/lib/appwrite';
+import { ID } from 'appwrite';
 import { useUser } from '@/hooks/useUser';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import AuthDialog from '@/components/auth/AuthDialog';
-import { ShareGenerationResult } from '@/lib/types';
+import { BelieverPointsService } from '@/lib/believerPointsService';
+
+// Use the same collection ID as the manual test
+const SHARE_TRACKING_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_SHARE_TRACKING_COLLECTION_ID || 'share_tracking';
 
 interface TrackableShareButtonProps {
     project: {
@@ -37,7 +41,46 @@ export default function TrackableShareButton({
 
     const [sharing, setSharing] = useState(false);
     const [shareResult, setShareResult] = useState<string>('');
-    const [shareData, setShareData] = useState<ShareGenerationResult | null>(null);
+    const [shareData, setShareData] = useState<any>(null);
+
+    // Helper functions (same as TrackableShareService but simplified)
+    const generateShareId = (): string => {
+        return `share_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    };
+
+    const generateTweetText = (
+        projectName: string,
+        projectTicker: string,
+        trackableUrl: string
+    ): string => {
+        const templates = [
+            `🚀 Just discovered ${projectName} ($${projectTicker}) on @TokenReady! 
+
+This project has serious potential. Check it out:
+
+${trackableUrl}
+
+#crypto #DeFi #TokenReady`,
+
+            `💎 Found a gem: ${projectName} ($${projectTicker})
+
+Built by a solid team with real utility. Worth checking out on @TokenReady:
+
+${trackableUrl}
+
+#crypto #altcoin`,
+
+            `⚡ ${projectName} ($${projectTicker}) looks promising!
+
+The fundamentals are strong and the community is growing. See for yourself:
+
+${trackableUrl}
+
+@TokenReady #cryptocurrency`
+        ];
+
+        return templates[Math.floor(Math.random() * templates.length)];
+    };
 
     const handleShare = async () => {
         if (!authenticated || !user) {
@@ -49,36 +92,192 @@ export default function TrackableShareButton({
         setShareResult('Generating trackable link...');
 
         try {
-            // Generate trackable share
-            const result = await TrackableShareService.generateTrackableShare(
-                user.$id,
-                project.$id,
-                project.name,
-                project.ticker
+            // Generate share data (matching the manual test format exactly)
+            const shareId = generateShareId();
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://tokenready.io';
+            const trackableUrl = `${baseUrl}/project/${project.$id}?share=${shareId}&ref=${user.$id}`;
+            const tweetText = generateTweetText(project.name, project.ticker, trackableUrl);
+            const twitterIntentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+
+            console.log('🔗 Generating share with data:', {
+                shareId,
+                userId: user.$id,
+                projectId: project.$id,
+                trackableUrl,
+                twitterIntentUrl
+            });
+
+            // Create share record in database (using EXACT same format as manual test)
+            const shareRecord = {
+                shareId: shareId,
+                userId: user.$id, // CRITICAL: Use user.$id exactly like manual test
+                projectId: project.$id,
+                shareUrl: trackableUrl,
+                twitterIntentUrl: twitterIntentUrl,
+                clickCount: 0, // Start at 0, will increment when clicked
+                shareCount: 0,
+                conversionCount: 0,
+                events: JSON.stringify([{
+                    type: 'share_generated',
+                    timestamp: new Date().toISOString(),
+                    metadata: { method: 'trackable_button' }
+                }]),
+                pointsAwarded: false, // Will be set to true when points are awarded
+                verified: false, // Will be set to true when share is verified
+                createdAt: new Date().toISOString()
+            };
+
+            console.log('💾 Creating share record:', shareRecord);
+
+            // Save to database (same method as manual test)
+            const response = await databases.createDocument(
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                ID.unique(),
+                shareRecord
             );
 
-            setShareData(result);
+            console.log('✅ Share record created:', response);
+
+            setShareData({
+                shareId,
+                trackableUrl,
+                twitterIntentUrl,
+                documentId: response.$id
+            });
+
             setShareResult('Opening Twitter...');
 
             // Set up popup tracking
-            const { openTwitterIntent, cleanup } =
-                TrackableShareService.setupTwitterIntentTracking(result.shareId);
+            let popup: Window | null = null;
+            let checkClosed: NodeJS.Timeout;
+
+            const openTwitterIntent = () => {
+                // Track the click
+                updateShareRecord(response.$id, {
+                    clickCount: 1,
+                    events: JSON.stringify([
+                        {
+                            type: 'share_generated',
+                            timestamp: new Date().toISOString(),
+                            metadata: { method: 'trackable_button' }
+                        },
+                        {
+                            type: 'twitter_intent_opened',
+                            timestamp: new Date().toISOString(),
+                            metadata: { method: 'popup' }
+                        }
+                    ])
+                });
+
+                // Open Twitter in popup
+                popup = window.open(
+                    twitterIntentUrl,
+                    'twitter-intent',
+                    'width=600,height=400,scrollbars=yes,resizable=yes'
+                );
+
+                // Monitor popup closure
+                checkClosed = setInterval(() => {
+                    if (popup?.closed) {
+                        clearInterval(checkClosed);
+
+                        // Popup closed - optimistically award points
+                        setTimeout(() => {
+                            handleShareCompletion(response.$id);
+                        }, 1000);
+                    }
+                }, 1000);
+            };
 
             // Open Twitter intent
-            openTwitterIntent(result.twitterIntentUrl);
+            openTwitterIntent();
 
             // Show success message
-            setShareResult('✅ Twitter opened! You\'ll earn 150 points if someone visits via your shared link.');
+            setShareResult('✅ Twitter opened! You\'ll earn 150 points when someone visits via your shared link.');
 
             // Cleanup after 5 minutes
-            setTimeout(cleanup, 300000);
+            setTimeout(() => {
+                if (checkClosed) clearInterval(checkClosed);
+                if (popup && !popup.closed) popup.close();
+            }, 300000);
 
         } catch (error) {
-            console.error('Share failed:', error);
+            console.error('❌ Share failed:', error);
             setShareResult('❌ Share failed. Please try again.');
         }
 
         setSharing(false);
+    };
+
+    // Helper function to update share record
+    const updateShareRecord = async (documentId: string, updates: any) => {
+        try {
+            await databases.updateDocument(
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                documentId,
+                updates
+            );
+            console.log('📊 Updated share record:', updates);
+        } catch (error) {
+            console.error('❌ Failed to update share record:', error);
+        }
+    };
+
+    // Handle share completion (when popup closes)
+    const handleShareCompletion = async (documentId: string) => {
+        try {
+            console.log('🎯 Share completion detected, awarding points optimistically...');
+
+            // Update share record to mark as verified and award points
+            await updateShareRecord(documentId, {
+                verified: true,
+                pointsAwarded: true,
+                verifiedAt: new Date().toISOString(),
+                shareCount: 1,
+                events: JSON.stringify([
+                    {
+                        type: 'share_generated',
+                        timestamp: new Date().toISOString(),
+                        metadata: { method: 'trackable_button' }
+                    },
+                    {
+                        type: 'twitter_intent_opened',
+                        timestamp: new Date().toISOString(),
+                        metadata: { method: 'popup' }
+                    },
+                    {
+                        type: 'share_completed',
+                        timestamp: new Date().toISOString(),
+                        metadata: { method: 'popup_closed', confidence: 'optimistic' }
+                    }
+                ])
+            });
+
+            // Award believer points
+            try {
+                await BelieverPointsService.awardPoints(
+                    user!.$id,
+                    'create_tweet',
+                    project.$id,
+                    {
+                        shareId: shareData?.shareId,
+                        method: 'trackable_link',
+                        shareUrl: shareData?.trackableUrl
+                    }
+                );
+
+                setShareResult('🎉 Success! You earned 150 Believer Points for sharing!');
+                console.log('✅ Points awarded successfully');
+            } catch (pointsError) {
+                console.error('❌ Failed to award points:', pointsError);
+                setShareResult('✅ Share completed! (Points will be awarded when verified)');
+            }
+
+        } catch (error) {
+            console.error('❌ Failed to handle share completion:', error);
+        }
     };
 
     const getSizeStyles = () => {
@@ -175,10 +374,10 @@ export default function TrackableShareButton({
                         <Box sx={{
                             mt: 2,
                             p: 2,
-                            backgroundColor: shareResult.includes('✅')
+                            backgroundColor: shareResult.includes('✅') || shareResult.includes('🎉')
                                 ? alpha('#00ff88', 0.1)
                                 : alpha('#ff6b6b', 0.1),
-                            border: `1px solid ${shareResult.includes('✅') ? '#00ff88' : '#ff6b6b'}`,
+                            border: `1px solid ${shareResult.includes('✅') || shareResult.includes('🎉') ? '#00ff88' : '#ff6b6b'}`,
                             borderRadius: '8px',
                             fontSize: '0.875rem'
                         }}>

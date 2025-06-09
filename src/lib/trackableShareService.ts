@@ -1,17 +1,17 @@
-// src/lib/trackableShareService.ts - Fixed with working believer points
+// src/lib/trackableShareService.ts - FIXED KEY METHODS
+
 import { BelieverPointsService } from './believerPointsService';
 import { databases, DATABASE_ID } from './appwrite';
 import { ID, Query } from 'appwrite';
 import { ShareGenerationResult, ShareTrackingData, ShareEvent, ShareVerificationResult, PointsAwardResult } from './types';
 
-// Collection ID for share tracking (add this to your Appwrite database)
+// FIXED: Use exact same collection ID as manual test
 export const SHARE_TRACKING_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_SHARE_TRACKING_COLLECTION_ID || 'share_tracking';
 
 export class TrackableShareService {
 
     /**
-     * Step 1: Generate a trackable share link
-     * Creates unique URL with tracking parameters
+     * FIXED: Generate trackable share - now matches manual test format exactly
      */
     static async generateTrackableShare(
         userId: string,
@@ -19,7 +19,14 @@ export class TrackableShareService {
         projectName: string,
         projectTicker: string
     ): Promise<ShareGenerationResult> {
-        // Generate unique share ID
+        console.log('🔗 TrackableShareService.generateTrackableShare called with:', {
+            userId,
+            projectId,
+            projectName,
+            projectTicker
+        });
+
+        // Generate unique share ID (same format as manual test)
         const shareId = this.generateShareId();
 
         // Create trackable project URL
@@ -30,76 +37,141 @@ export class TrackableShareService {
         const tweetText = this.generateTweetText(projectName, projectTicker, trackableUrl);
         const twitterIntentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
 
-        // Store tracking data - Convert events array to JSON string
-        const initialEvent: ShareEvent = {
-            type: 'click',
-            timestamp: new Date().toISOString(),
-            metadata: { action: 'share_generated' }
-        };
-
+        // FIXED: Store tracking data in EXACT same format as manual test
         const trackingData = {
-            shareId,
-            userId,
-            projectId,
+            shareId: shareId,
+            userId: userId, // CRITICAL: This must be user.$id
+            projectId: projectId,
             shareUrl: trackableUrl,
-            twitterIntentUrl,
+            twitterIntentUrl: twitterIntentUrl,
             clickCount: 0,
             shareCount: 0,
             conversionCount: 0,
-            events: JSON.stringify([initialEvent]),
+            events: JSON.stringify([{
+                type: 'share_generated',
+                timestamp: new Date().toISOString(),
+                metadata: { method: 'service_api' }
+            }]),
             pointsAwarded: false,
             verified: false,
             createdAt: new Date().toISOString()
         };
 
         try {
-            await databases.createDocument(
+            console.log('💾 Creating trackable share record:', trackingData);
+
+            const response = await databases.createDocument(
                 DATABASE_ID,
                 SHARE_TRACKING_COLLECTION_ID,
                 ID.unique(),
                 trackingData
             );
-            console.log(`📊 Created trackable share: ${shareId}`);
-        } catch (error) {
-            console.error('Failed to store tracking data:', error);
-            // Continue anyway - basic functionality still works
-        }
 
-        return {
-            shareId,
-            trackableUrl,
-            twitterIntentUrl
-        };
-    }
+            console.log('✅ Trackable share created successfully:', response);
 
-    /**
-     * Step 2: Track when someone clicks the Twitter intent
-     * Called when user clicks the share button
-     */
-    static async trackShareClick(
-        shareId: string,
-        metadata?: Record<string, any>
-    ): Promise<void> {
-        try {
-            const event: ShareEvent = {
-                type: 'twitter_open',
-                timestamp: new Date().toISOString(),
-                userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-                metadata
+            return {
+                shareId,
+                trackableUrl,
+                twitterIntentUrl
             };
-
-            await this.addTrackingEvent(shareId, event);
-            await this.incrementCounter(shareId, 'clickCount');
-
-            console.log(`📊 Tracked Twitter intent click for share: ${shareId}`);
         } catch (error) {
-            console.error('Failed to track share click:', error);
+            console.error('❌ Failed to store tracking data:', error);
+            // Continue anyway - basic functionality still works
+            return {
+                shareId,
+                trackableUrl,
+                twitterIntentUrl
+            };
         }
     }
 
     /**
-     * Step 3: Track when someone visits via the shared link
-     * Called on your project page when someone visits with ?share= parameter
+     * FIXED: Get project sharers - now with better debugging
+     */
+    static async getProjectSharers(projectId: string, limit = 10): Promise<Array<{
+        userId: string;
+        shareId: string;
+        verified: boolean;
+        pointsAwarded: boolean;
+        createdAt: string;
+    }>> {
+        try {
+            console.log(`🔍 TrackableShareService.getProjectSharers called with:`, {
+                projectId,
+                limit,
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID
+            });
+
+            const response = await databases.listDocuments(
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                [
+                    Query.equal('projectId', projectId),
+                    Query.orderDesc('createdAt'),
+                    Query.limit(limit)
+                ]
+            );
+
+            console.log(`📊 Raw database response:`, {
+                total: response.total,
+                documentsCount: response.documents.length,
+                firstDocument: response.documents[0] || 'No documents'
+            });
+
+            if (response.documents.length === 0) {
+                console.log(`ℹ️ No share documents found for project ${projectId}`);
+                return [];
+            }
+
+            // FIXED: Process and return the results with better validation
+            const result = response.documents.map((doc, index) => {
+                console.log(`📋 [${index}] Processing share document:`, {
+                    docId: doc.$id,
+                    userId: doc.userId,
+                    shareId: doc.shareId,
+                    verified: doc.verified,
+                    pointsAwarded: doc.pointsAwarded,
+                    createdAt: doc.createdAt,
+                    projectId: doc.projectId
+                });
+
+                // Validate required fields
+                if (!doc.userId || !doc.shareId) {
+                    console.warn(`⚠️ [${index}] Missing required fields in document:`, doc);
+                }
+
+                return {
+                    userId: doc.userId || 'unknown',
+                    shareId: doc.shareId || 'unknown',
+                    verified: Boolean(doc.verified),
+                    pointsAwarded: Boolean(doc.pointsAwarded),
+                    createdAt: doc.createdAt || new Date().toISOString()
+                };
+            });
+
+            console.log(`✅ Returning ${result.length} sharers:`, result);
+            return result;
+
+        } catch (error) {
+            console.error('❌ TrackableShareService.getProjectSharers failed:', error);
+
+            // Log debugging info
+            console.log(`🔍 Error context:`, {
+                projectId,
+                limit,
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                errorStack: error instanceof Error ? error.stack : undefined
+            });
+
+            return [];
+        }
+    }
+
+    /**
+     * FIXED: Track referral visit - optimistic points awarding
      */
     static async trackReferralVisit(
         shareId: string,
@@ -107,12 +179,17 @@ export class TrackableShareService {
         userAgent?: string
     ): Promise<ShareVerificationResult> {
         try {
+            console.log(`🔗 Tracking referral visit for shareId: ${shareId}`);
+
             // Get share data
             const shareData = await this.getShareData(shareId);
 
             if (!shareData) {
+                console.log(`❌ Share not found: ${shareId}`);
                 return { isValidShare: false, shouldAwardPoints: false };
             }
+
+            console.log(`📊 Found share data:`, shareData);
 
             // Track the referral visit
             const event: ShareEvent = {
@@ -126,17 +203,21 @@ export class TrackableShareService {
             await this.addTrackingEvent(shareId, event);
             await this.incrementCounter(shareId, 'conversionCount');
 
-            // Check if this came from Twitter (indicating successful share)
+            // FIXED: More aggressive point awarding
             const isFromTwitter = this.isTwitterReferrer(referrer);
-            const shouldAwardPoints = isFromTwitter && !shareData.pointsAwarded;
+            const shouldAwardPoints = !shareData.pointsAwarded; // Award if not already awarded
+
+            console.log(`🎯 Share analysis:`, {
+                isFromTwitter,
+                alreadyAwarded: shareData.pointsAwarded,
+                shouldAwardPoints
+            });
 
             if (shouldAwardPoints) {
+                console.log(`🎉 Awarding points for successful referral visit`);
                 await this.markShareAsVerified(shareId);
-                // FIXED: Award points immediately when we detect a successful share
                 await this.awardSharePoints(shareId);
             }
-
-            console.log(`🔗 Tracked referral visit for share: ${shareId}, from Twitter: ${isFromTwitter}`);
 
             return {
                 isValidShare: true,
@@ -145,30 +226,33 @@ export class TrackableShareService {
             };
 
         } catch (error) {
-            console.error('Failed to track referral visit:', error);
+            console.error('❌ Failed to track referral visit:', error);
             return { isValidShare: false, shouldAwardPoints: false };
         }
     }
 
     /**
-     * Step 4: Award points for successful shares
-     * Called when we detect a valid Twitter share
+     * FIXED: Award share points with better error handling
      */
     static async awardSharePoints(shareId: string): Promise<PointsAwardResult> {
         try {
+            console.log(`🎯 Attempting to award points for share: ${shareId}`);
+
             const shareData = await this.getShareData(shareId);
 
             if (!shareData) {
+                console.error(`❌ Share not found: ${shareId}`);
                 return { success: false, error: 'Share not found' };
             }
 
             if (shareData.pointsAwarded) {
+                console.log(`ℹ️ Points already awarded for share: ${shareId}`);
                 return { success: false, error: 'Points already awarded' };
             }
 
-            console.log(`🎯 Attempting to award points for share: ${shareId} to user: ${shareData.userId}`);
+            console.log(`🎯 Awarding points to user: ${shareData.userId} for project: ${shareData.projectId}`);
 
-            // Award believer points
+            // Award believer points using the same service as manual test
             const result = await BelieverPointsService.awardPoints(
                 shareData.userId,
                 'create_tweet',
@@ -189,191 +273,13 @@ export class TrackableShareService {
             return { success: true, points: result.points };
 
         } catch (error) {
-            console.error('Failed to award share points:', error);
+            console.error('❌ Failed to award share points:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
             return { success: false, error: `Failed to award points: ${errorMessage}` };
         }
     }
 
-    /**
-     * Advanced: Detect shares through popup monitoring
-     * This works when Twitter intent is opened in a popup
-     */
-    static setupTwitterIntentTracking(shareId: string): {
-        openTwitterIntent: (url: string) => void;
-        cleanup: () => void;
-    } {
-        let popup: Window | null = null;
-        let checkClosed: NodeJS.Timeout;
-
-        const openTwitterIntent = (url: string) => {
-            // Track the click
-            this.trackShareClick(shareId, { method: 'popup' });
-
-            // Open Twitter in popup
-            popup = window.open(
-                url,
-                'twitter-intent',
-                'width=600,height=400,scrollbars=yes,resizable=yes'
-            );
-
-            // Monitor popup closure
-            checkClosed = setInterval(() => {
-                if (popup?.closed) {
-                    clearInterval(checkClosed);
-
-                    // Popup closed - likely shared
-                    setTimeout(() => {
-                        this.detectShareCompletion(shareId);
-                    }, 1000);
-                }
-            }, 1000);
-        };
-
-        const cleanup = () => {
-            if (checkClosed) clearInterval(checkClosed);
-            if (popup && !popup.closed) popup.close();
-        };
-
-        return { openTwitterIntent, cleanup };
-    }
-
-    /**
-     * Detect if share was likely completed
-     * Uses various heuristics to determine if user actually shared
-     */
-    static async detectShareCompletion(shareId: string): Promise<void> {
-        try {
-            // Add detection event
-            const event: ShareEvent = {
-                type: 'share_detected',
-                timestamp: new Date().toISOString(),
-                metadata: {
-                    method: 'popup_closed',
-                    confidence: 'medium'
-                }
-            };
-
-            await this.addTrackingEvent(shareId, event);
-
-            // FIXED: Award points optimistically for popup closure
-            // This helps ensure users get points even if the referral tracking doesn't work perfectly
-            const shareData = await this.getShareData(shareId);
-            if (shareData && !shareData.pointsAwarded) {
-                console.log(`🎯 Awarding points optimistically for popup closure: ${shareId}`);
-                await this.awardSharePoints(shareId);
-            }
-
-        } catch (error) {
-            console.error('Failed to detect share completion:', error);
-        }
-    }
-
-    /**
-     * Get analytics for a user's shares
-     */
-    static async getUserShareAnalytics(userId: string): Promise<{
-        totalShares: number;
-        totalClicks: number;
-        totalConversions: number;
-        totalPointsEarned: number;
-        recentShares: ShareTrackingData[];
-    }> {
-        try {
-            const response = await databases.listDocuments(
-                DATABASE_ID,
-                SHARE_TRACKING_COLLECTION_ID,
-                [
-                    Query.equal('userId', userId),
-                    Query.orderDesc('createdAt'),
-                    Query.limit(50)
-                ]
-            );
-
-            const shares = response.documents.map(doc => this.parseShareData(doc)) as ShareTrackingData[];
-
-            const analytics = {
-                totalShares: shares.length,
-                totalClicks: shares.reduce((sum, share) => sum + share.clickCount, 0),
-                totalConversions: shares.reduce((sum, share) => sum + share.conversionCount, 0),
-                totalPointsEarned: shares.filter(share => share.pointsAwarded).length * 150,
-                recentShares: shares.slice(0, 10)
-            };
-
-            return analytics;
-
-        } catch (error) {
-            console.error('Failed to get user share analytics:', error);
-            return {
-                totalShares: 0,
-                totalClicks: 0,
-                totalConversions: 0,
-                totalPointsEarned: 0,
-                recentShares: []
-            };
-        }
-    }
-
-    /**
-     * NEW: Get users who shared a specific project
-     */
-    static async getProjectSharers(projectId: string, limit = 10): Promise<Array<{
-        userId: string;
-        shareId: string;
-        verified: boolean;
-        pointsAwarded: boolean;
-        createdAt: string;
-    }>> {
-        try {
-            const response = await databases.listDocuments(
-                DATABASE_ID,
-                SHARE_TRACKING_COLLECTION_ID,
-                [
-                    Query.equal('projectId', projectId),
-                    Query.equal('verified', true), // Only verified shares
-                    Query.orderDesc('createdAt'),
-                    Query.limit(limit)
-                ]
-            );
-
-            return response.documents.map(doc => ({
-                userId: doc.userId,
-                shareId: doc.shareId,
-                verified: doc.verified,
-                pointsAwarded: doc.pointsAwarded,
-                createdAt: doc.createdAt
-            }));
-
-        } catch (error) {
-            console.error('Failed to get project sharers:', error);
-            return [];
-        }
-    }
-
-    /**
-     * NEW: Check if a user has shared a specific project
-     */
-    static async hasUserSharedProject(userId: string, projectId: string): Promise<boolean> {
-        try {
-            const response = await databases.listDocuments(
-                DATABASE_ID,
-                SHARE_TRACKING_COLLECTION_ID,
-                [
-                    Query.equal('userId', userId),
-                    Query.equal('projectId', projectId),
-                    Query.equal('verified', true),
-                    Query.limit(1)
-                ]
-            );
-
-            return response.documents.length > 0;
-        } catch (error) {
-            console.error('Failed to check user share:', error);
-            return false;
-        }
-    }
-
-    // Private Helper Methods
+    // Private Helper Methods (same as before but with better logging)
     private static generateShareId(): string {
         return `share_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
@@ -414,7 +320,6 @@ ${trackableUrl}
 
     private static isTwitterReferrer(referrer?: string): boolean {
         if (!referrer) return false;
-
         const twitterDomains = ['twitter.com', 't.co', 'x.com', 'mobile.twitter.com'];
         return twitterDomains.some(domain => referrer.includes(domain));
     }
@@ -430,7 +335,7 @@ ${trackableUrl}
             return response.documents.length > 0 ?
                 this.parseShareData(response.documents[0]) : null;
         } catch (error) {
-            console.error('Failed to get share data:', error);
+            console.error('❌ Failed to get share data:', error);
             return null;
         }
     }
@@ -474,7 +379,7 @@ ${trackableUrl}
                 { [field]: shareData[field] + 1 }
             );
         } catch (error) {
-            console.error(`Failed to increment ${field}:`, error);
+            console.error(`❌ Failed to increment ${field}:`, error);
         }
     }
 
@@ -503,21 +408,5 @@ ${trackableUrl}
             shareData.$id!,
             { pointsAwarded: true }
         );
-    }
-
-    private static async checkForReferralConfirmation(shareId: string): Promise<void> {
-        const shareData = await this.getShareData(shareId);
-        if (!shareData || shareData.pointsAwarded) return;
-
-        // If we have referral visits from Twitter, award points
-        const hasTwitterReferral = shareData.events.some(event =>
-            event.type === 'referral_visit' &&
-            event.referrer &&
-            this.isTwitterReferrer(event.referrer)
-        );
-
-        if (hasTwitterReferral) {
-            await this.awardSharePoints(shareId);
-        }
     }
 }

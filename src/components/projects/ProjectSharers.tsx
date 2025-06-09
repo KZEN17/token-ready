@@ -1,4 +1,4 @@
-// src/components/projects/ProjectSharers.tsx 
+// src/components/projects/ProjectSharers.tsx - FIXED VERSION
 'use client';
 
 import {
@@ -61,9 +61,10 @@ export default function ProjectSharers({
             // Get users who shared this project
             const shareData = await TrackableShareService.getProjectSharers(projectId, limit);
 
-            console.log(`📊 Found ${shareData.length} shares for project ${projectId}:`, shareData);
+            console.log(`📊 Raw share data from TrackableShareService:`, shareData);
 
             if (shareData.length === 0) {
+                console.log(`ℹ️ No shares found for project ${projectId}`);
                 setSharers([]);
                 setLoading(false);
                 return;
@@ -71,18 +72,32 @@ export default function ProjectSharers({
 
             // Fetch user data for each sharer
             const sharersWithUserData = await Promise.all(
-                shareData.map(async (share) => {
+                shareData.map(async (share, index) => {
                     try {
-                        console.log(`👤 Fetching user data for userId: ${share.userId}`);
+                        console.log(`👤 [${index}] Fetching user data for userId: ${share.userId}`);
 
-                        // FIXED: Use the userId (which is the user's $id) to get the user document
+                        // CRITICAL: Validate that userId exists and is a string
+                        if (!share.userId || typeof share.userId !== 'string') {
+                            console.error(`❌ [${index}] Invalid userId:`, share.userId);
+                            throw new Error(`Invalid userId: ${share.userId}`);
+                        }
+
+                        // CRITICAL: Check userId format (should be 20+ characters)
+                        if (share.userId.length < 10) {
+                            console.error(`❌ [${index}] UserId too short (likely not a document ID):`, share.userId);
+                            throw new Error(`UserId format invalid: ${share.userId}`);
+                        }
+
+                        console.log(`🔍 [${index}] Attempting to fetch user document with ID: "${share.userId}"`);
+
+                        // Try to get the user document using the userId as document ID
                         const userResponse = await databases.getDocument(
                             DATABASE_ID,
                             USERS_COLLECTION_ID,
-                            share.userId // This is the user's document $id
+                            share.userId // This should be the user's document $id
                         );
 
-                        console.log(`✅ User data found:`, {
+                        console.log(`✅ [${index}] User data found:`, {
                             id: userResponse.$id,
                             username: userResponse.username,
                             displayName: userResponse.displayName
@@ -98,14 +113,27 @@ export default function ProjectSharers({
                                 isVerifiedKOL: userResponse.isVerifiedKOL || false,
                             }
                         } as ProjectSharer;
+
                     } catch (userError) {
-                        console.error(`❌ Error fetching user data for ${share.userId}:`, userError);
+                        console.error(`❌ [${index}] Error fetching user data for ${share.userId}:`, userError);
+
+                        // Log additional debugging info
+                        console.log(`🔍 [${index}] Share object:`, share);
+                        console.log(`🔍 [${index}] DATABASE_ID:`, DATABASE_ID);
+                        console.log(`🔍 [${index}] USERS_COLLECTION_ID:`, USERS_COLLECTION_ID);
+
+                        // Try to understand the error better
+                        if (userError instanceof Error) {
+                            console.log(`🔍 [${index}] Error message:`, userError.message);
+                            console.log(`🔍 [${index}] Error stack:`, userError.stack);
+                        }
+
                         // Return sharer without user data if user fetch fails
                         return {
                             ...share,
                             user: {
-                                username: 'deleted_user',
-                                displayName: 'Deleted User',
+                                username: 'error_user',
+                                displayName: 'Error Loading User',
                                 profileImage: '',
                                 followerCount: 0,
                                 isVerifiedKOL: false,
@@ -117,9 +145,18 @@ export default function ProjectSharers({
 
             console.log(`✅ Final sharers with user data:`, sharersWithUserData);
             setSharers(sharersWithUserData);
+
         } catch (err) {
             console.error('❌ Error fetching project sharers:', err);
             setError('Failed to load sharers');
+
+            // Log more debugging info
+            console.log(`🔍 Error details:`, {
+                projectId,
+                DATABASE_ID,
+                USERS_COLLECTION_ID,
+                error: err
+            });
         } finally {
             setLoading(false);
         }
