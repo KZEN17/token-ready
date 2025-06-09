@@ -232,7 +232,106 @@ export class TrackableShareService {
     }
 
     /**
-     * FIXED: Award share points with better error handling
+     * Get analytics for a user's shares
+     */
+    static async getUserShareAnalytics(userId: string): Promise<{
+        totalShares: number;
+        totalClicks: number;
+        totalConversions: number;
+        totalPointsEarned: number;
+        recentShares: ShareTrackingData[];
+    }> {
+        try {
+            console.log(`📊 Getting share analytics for user: ${userId}`);
+
+            const response = await databases.listDocuments(
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                [
+                    Query.equal('userId', userId),
+                    Query.orderDesc('createdAt'),
+                    Query.limit(50)
+                ]
+            );
+
+            const shares = response.documents.map(doc => this.parseShareData(doc)) as ShareTrackingData[];
+
+            const analytics = {
+                totalShares: shares.length,
+                totalClicks: shares.reduce((sum, share) => sum + share.clickCount, 0),
+                totalConversions: shares.reduce((sum, share) => sum + share.conversionCount, 0),
+                totalPointsEarned: shares.filter(share => share.pointsAwarded).length * 150,
+                recentShares: shares.slice(0, 10)
+            };
+
+            console.log(`📊 User analytics:`, analytics);
+            return analytics;
+
+        } catch (error) {
+            console.error('❌ Failed to get user share analytics:', error);
+            return {
+                totalShares: 0,
+                totalClicks: 0,
+                totalConversions: 0,
+                totalPointsEarned: 0,
+                recentShares: []
+            };
+        }
+    }
+
+    /**
+     * NEW: Check if a user has already shared a specific project
+     */
+    static async hasUserSharedProject(userId: string, projectId: string): Promise<boolean> {
+        try {
+            console.log(`🔍 Checking if user ${userId} has shared project ${projectId}`);
+
+            const response = await databases.listDocuments(
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                [
+                    Query.equal('userId', userId),
+                    Query.equal('projectId', projectId),
+                    Query.limit(1)
+                ]
+            );
+
+            const hasShared = response.documents.length > 0;
+            console.log(`📊 User has ${hasShared ? 'already' : 'not'} shared this project`);
+
+            return hasShared;
+        } catch (error) {
+            console.error('❌ Failed to check user share status:', error);
+            return false; // Default to allowing shares on error
+        }
+    }
+
+    /**
+     * NEW: Get user's existing share for a project (if any)
+     */
+    static async getUserProjectShare(userId: string, projectId: string): Promise<ShareTrackingData | null> {
+        try {
+            const response = await databases.listDocuments(
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                [
+                    Query.equal('userId', userId),
+                    Query.equal('projectId', projectId),
+                    Query.orderDesc('createdAt'),
+                    Query.limit(1)
+                ]
+            );
+
+            return response.documents.length > 0 ?
+                this.parseShareData(response.documents[0]) : null;
+        } catch (error) {
+            console.error('❌ Failed to get user project share:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Award points for a successful share
      */
     static async awardSharePoints(shareId: string): Promise<PointsAwardResult> {
         try {
@@ -279,7 +378,7 @@ export class TrackableShareService {
         }
     }
 
-    // Private Helper Methods (same as before but with better logging)
+    // Private Helper Methods
     private static generateShareId(): string {
         return `share_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
