@@ -1,4 +1,4 @@
-// src/components/projects/ProjectCard.tsx (Updated with Believer Points Integration)
+// src/components/projects/ProjectCard.tsx (Fixed with review status checking and consistent heights)
 'use client';
 
 import {
@@ -15,6 +15,7 @@ import {
     alpha,
     Snackbar,
     Alert,
+    CircularProgress,
 } from '@mui/material';
 import {
     ThumbUp,
@@ -28,11 +29,13 @@ import {
     Star,
     People,
     AccountBalanceWallet,
-    Add,
+    CheckCircle,
 } from '@mui/icons-material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useBelieverActions } from '@/hooks/useBelieverPoints';
+import { useUser } from '@/hooks/useUser';
+import { ReviewService } from '@/lib/reviewService';
 import AuthDialog from '@/components/auth/AuthDialog';
 
 interface Project {
@@ -66,6 +69,9 @@ interface ProjectCardProps {
     onReview: (projectId: string) => void;
 }
 
+
+
+
 export default function ProjectCard({
     project,
     currentUserId,
@@ -77,7 +83,13 @@ export default function ProjectCard({
 }: ProjectCardProps) {
     const { requireAuth, showAuthDialog, hideAuthDialog, authMessage, login } = useAuthGuard();
     const { awardUpvotePoints, canPerformAction } = useBelieverActions();
+    const { user, authenticated } = useUser();
 
+    // Review status state
+    const [hasReviewed, setHasReviewed] = useState<boolean | null>(null); // null = loading
+    const [checkingReview, setCheckingReview] = useState(false);
+
+    // Points notification state
     const [pointsSnackbar, setPointsSnackbar] = useState<{
         open: boolean;
         message: string;
@@ -87,6 +99,29 @@ export default function ProjectCard({
         message: '',
         severity: 'success'
     });
+
+    // Check if user has reviewed this project
+    useEffect(() => {
+        const checkUserReview = async () => {
+            if (!authenticated || !user) {
+                setHasReviewed(null);
+                return;
+            }
+
+            setCheckingReview(true);
+            try {
+                const hasUserReviewed = await ReviewService.hasUserReviewedProject(user.$id, project.$id);
+                setHasReviewed(hasUserReviewed);
+            } catch (error) {
+                console.error('Error checking review status:', error);
+                setHasReviewed(false); // Default to false on error
+            } finally {
+                setCheckingReview(false);
+            }
+        };
+
+        checkUserReview();
+    }, [authenticated, user, project.$id]);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -158,11 +193,143 @@ export default function ProjectCard({
         setPointsSnackbar(prev => ({ ...prev, open: false }));
     };
 
+    // Render review button based on authentication and review status
+    const renderReviewButton = () => {
+        if (!authenticated) {
+            // Show review button for unauthenticated users (will trigger auth dialog)
+            return (
+                <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<RateReview sx={{ fontSize: '1rem' }} />}
+                    onClick={handleReview}
+                    sx={{
+                        borderColor: '#ff6b6b',
+                        color: '#ff6b6b',
+                        fontWeight: 'bold',
+                        fontSize: '0.8rem',
+                        py: 1,
+                        position: 'relative',
+                        '&:hover': {
+                            backgroundColor: alpha('#ff6b6b', 0.1),
+                            borderColor: '#ff6b6b',
+                            transform: 'translateY(-1px)',
+                        }
+                    }}
+                >
+                    Review
+                    <Chip
+                        label="+100"
+                        size="small"
+                        sx={{
+                            position: 'absolute',
+                            top: -8,
+                            right: -8,
+                            backgroundColor: '#ff6b6b',
+                            color: '#000',
+                            fontSize: '0.6rem',
+                            height: 16,
+                            minWidth: 24,
+                            fontWeight: 'bold',
+                            '& .MuiChip-label': { px: 0.5 }
+                        }}
+                    />
+                </Button>
+            );
+        }
+
+        if (checkingReview || hasReviewed === null) {
+            // Show loading state while checking review status
+            return (
+                <Button
+                    variant="outlined"
+                    size="small"
+                    disabled
+                    sx={{
+                        borderColor: '#666',
+                        color: '#666',
+                        fontWeight: 'bold',
+                        fontSize: '0.8rem',
+                        py: 1,
+                        minWidth: '90px',
+                    }}
+                >
+                    <CircularProgress size={16} sx={{ color: '#666' }} />
+                </Button>
+            );
+        }
+
+        if (hasReviewed) {
+            // Show "Reviewed" state for users who already reviewed
+            return (
+                <Button
+                    variant="outlined"
+                    size="small"
+                    disabled
+                    startIcon={<CheckCircle sx={{ fontSize: '1rem' }} />}
+                    sx={{
+                        borderColor: '#00ff88',
+                        color: '#00ff88',
+                        fontWeight: 'bold',
+                        fontSize: '0.8rem',
+                        py: 1,
+                        backgroundColor: alpha('#00ff88', 0.1),
+                    }}
+                >
+                    Reviewed
+                </Button>
+            );
+        }
+
+        // Show review button for authenticated users who haven't reviewed
+        return (
+            <Button
+                variant="outlined"
+                size="small"
+                startIcon={<RateReview sx={{ fontSize: '1rem' }} />}
+                onClick={handleReview}
+                sx={{
+                    borderColor: '#ff6b6b',
+                    color: '#ff6b6b',
+                    fontWeight: 'bold',
+                    fontSize: '0.8rem',
+                    py: 1,
+                    position: 'relative',
+                    '&:hover': {
+                        backgroundColor: alpha('#ff6b6b', 0.1),
+                        borderColor: '#ff6b6b',
+                        transform: 'translateY(-1px)',
+                    }
+                }}
+            >
+                Review
+                <Chip
+                    label="+100"
+                    size="small"
+                    sx={{
+                        position: 'absolute',
+                        top: -8,
+                        right: -8,
+                        backgroundColor: '#ff6b6b',
+                        color: '#000',
+                        fontSize: '0.6rem',
+                        height: 16,
+                        minWidth: 24,
+                        fontWeight: 'bold',
+                        '& .MuiChip-label': { px: 0.5 }
+                    }}
+                />
+            </Button>
+        );
+    };
+
     return (
         <>
             <Card
                 sx={{
-                    height: '100%',
+                    height: '500px', // Fixed height for consistency
+                    display: 'flex',
+                    flexDirection: 'column',
                     background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
                     border: '1px solid #333',
                     borderRadius: 3,
@@ -190,10 +357,10 @@ export default function ProjectCard({
                     }}
                 />
 
-                <CardContent sx={{ p: 3 }}>
+                <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
                     {/* Header */}
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
                             <Avatar
                                 src={project.logoUrl || undefined}
                                 sx={{
@@ -203,13 +370,24 @@ export default function ProjectCard({
                                     color: '#000',
                                     fontSize: '1.5rem',
                                     fontWeight: 'bold',
-                                    border: '2px solid #333'
+                                    border: '2px solid #333',
+                                    flexShrink: 0,
                                 }}
                             >
                                 {project.name.charAt(0)}
                             </Avatar>
-                            <Box>
-                                <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', mb: 0.5 }}>
+                            <Box sx={{ minWidth: 0, flex: 1 }}>
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        color: 'white',
+                                        fontWeight: 'bold',
+                                        mb: 0.5,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
                                     {project.name}
                                 </Typography>
                                 <Typography
@@ -217,14 +395,17 @@ export default function ProjectCard({
                                     sx={{
                                         color: '#00ff88',
                                         fontWeight: 'bold',
-                                        fontSize: '0.9rem'
+                                        fontSize: '0.9rem',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
                                     }}
                                 >
                                     {project.ticker}
                                 </Typography>
                             </Box>
                         </Box>
-                        <Stack direction="row" spacing={1}>
+                        <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
                             <IconButton
                                 onClick={handleUpvote}
                                 sx={{
@@ -298,197 +479,148 @@ export default function ProjectCard({
                         />
                     </Stack>
 
-                    {/* Pitch */}
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: '#b0b0b0',
-                            mb: 2,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 3,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            lineHeight: 1.5,
-                            height: '4.5em'
-                        }}
-                    >
-                        {project.pitch}
-                    </Typography>
+                    {/* Pitch - Fixed height container */}
+                    <Box sx={{ mb: 2, height: '4.5em', overflow: 'hidden' }}>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: '#b0b0b0',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                lineHeight: 1.5,
+                            }}
+                        >
+                            {project.pitch}
+                        </Typography>
+                    </Box>
 
-                    {/* Team Members Preview */}
-                    {project.teamMembers && project.teamMembers.length > 0 && (
-                        <Box sx={{ mb: 2 }}>
-                            <Typography variant="caption" sx={{ color: '#00ff88', fontWeight: 'bold', display: 'block', mb: 1 }}>
-                                Team ({project.teamMembers.length} members)
-                            </Typography>
-                            <Typography
-                                variant="caption"
+                    {/* Team Members Preview - Fixed height */}
+                    <Box sx={{ mb: 2, height: '3em' }}>
+                        {project.teamMembers && project.teamMembers.length > 0 && (
+                            <>
+                                <Typography variant="caption" sx={{ color: '#00ff88', fontWeight: 'bold', display: 'block', mb: 1 }}>
+                                    Team ({project.teamMembers.length} members)
+                                </Typography>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: '#888',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 1,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden'
+                                    }}
+                                >
+                                    {project.teamMembers.slice(0, 2).join(' • ')}
+                                    {project.teamMembers.length > 2 && ' • ...'}
+                                </Typography>
+                            </>
+                        )}
+                    </Box>
+
+                    {/* Stats Grid - Fixed height */}
+                    <Box sx={{ mb: 3, height: '4em' }}>
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 3 }}>
+                                <Box sx={{ textAlign: 'center' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
+                                        <ThumbUp sx={{ color: '#00ff88', fontSize: '1rem', mr: 0.5 }} />
+                                        <Typography variant="h6" sx={{ color: '#00ff88', fontWeight: 'bold' }}>
+                                            {formatNumber(project.upvotes?.length || 0)}
+                                        </Typography>
+                                    </Box>
+                                    <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
+                                        Upvotes
+                                    </Typography>
+                                </Box>
+                            </Grid>
+                            <Grid size={{ xs: 3 }}>
+                                <Box sx={{ textAlign: 'center' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
+                                        <Star sx={{ color: '#ffa726', fontSize: '1rem', mr: 0.5 }} />
+                                        <Typography variant="h6" sx={{ color: '#ffa726', fontWeight: 'bold' }}>
+                                            {project.bobScore || '-'}
+                                        </Typography>
+                                    </Box>
+                                    <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
+                                        BOB Score
+                                    </Typography>
+                                </Box>
+                            </Grid>
+                            <Grid size={{ xs: 3 }}>
+                                <Box sx={{ textAlign: 'center' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
+                                        <People sx={{ color: '#ff6b6b', fontSize: '1rem', mr: 0.5 }} />
+                                        <Typography variant="h6" sx={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+                                            {formatNumber(project.believers)}
+                                        </Typography>
+                                    </Box>
+                                    <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
+                                        Believers
+                                    </Typography>
+                                </Box>
+                            </Grid>
+                            <Grid size={{ xs: 3 }}>
+                                <Box sx={{ textAlign: 'center' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
+                                        <AccountBalanceWallet sx={{ color: '#00ff88', fontSize: '1rem', mr: 0.5 }} />
+                                        <Typography variant="h6" sx={{ color: '#00ff88', fontWeight: 'bold' }}>
+                                            {formatNumber(project.totalStaked)}
+                                        </Typography>
+                                    </Box>
+                                    <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
+                                        Staked
+                                    </Typography>
+                                </Box>
+                            </Grid>
+                        </Grid>
+                    </Box>
+
+                    {/* Action Buttons - Fixed at bottom */}
+                    <Box sx={{ mt: 'auto' }}>
+                        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                            <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<Launch sx={{ fontSize: '1rem' }} />}
+                                href={project.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                component="a"
                                 sx={{
-                                    color: '#888',
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 1,
-                                    WebkitBoxOrient: 'vertical',
-                                    overflow: 'hidden'
+                                    flex: 1,
+                                    background: 'linear-gradient(45deg, #00ff88, #4dffb0)',
+                                    color: '#000',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.8rem',
+                                    py: 1,
+                                    '&:hover': {
+                                        background: 'linear-gradient(45deg, #4dffb0, #00ff88)',
+                                        transform: 'translateY(-1px)',
+                                        boxShadow: '0 4px 12px rgba(0, 255, 136, 0.3)',
+                                    }
                                 }}
                             >
-                                {project.teamMembers.slice(0, 2).join(' • ')}
-                                {project.teamMembers.length > 2 && ' • ...'}
-                            </Typography>
-                        </Box>
-                    )}
+                                Website
+                            </Button>
+                            {renderReviewButton()}
+                        </Stack>
 
-                    {/* Stats Grid */}
-                    <Grid container spacing={2} sx={{ mb: 3 }}>
-                        <Grid size={{ xs: 3 }}>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
-                                    <ThumbUp sx={{ color: '#00ff88', fontSize: '1rem', mr: 0.5 }} />
-                                    <Typography variant="h6" sx={{ color: '#00ff88', fontWeight: 'bold' }}>
-                                        {formatNumber(project.upvotes?.length || 0)}
-                                    </Typography>
-                                </Box>
-                                <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
-                                    Upvotes
-                                </Typography>
-                            </Box>
-                        </Grid>
-                        <Grid size={{ xs: 3 }}>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
-                                    <Star sx={{ color: '#ffa726', fontSize: '1rem', mr: 0.5 }} />
-                                    <Typography variant="h6" sx={{ color: '#ffa726', fontWeight: 'bold' }}>
-                                        {project.bobScore || '-'}
-                                    </Typography>
-                                </Box>
-                                <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
-                                    BOB Score
-                                </Typography>
-                            </Box>
-                        </Grid>
-                        <Grid size={{ xs: 3 }}>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
-                                    <People sx={{ color: '#ff6b6b', fontSize: '1rem', mr: 0.5 }} />
-                                    <Typography variant="h6" sx={{ color: '#ff6b6b', fontWeight: 'bold' }}>
-                                        {formatNumber(project.believers)}
-                                    </Typography>
-                                </Box>
-                                <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
-                                    Believers
-                                </Typography>
-                            </Box>
-                        </Grid>
-                        <Grid size={{ xs: 3 }}>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
-                                    <AccountBalanceWallet sx={{ color: '#00ff88', fontSize: '1rem', mr: 0.5 }} />
-                                    <Typography variant="h6" sx={{ color: '#00ff88', fontWeight: 'bold' }}>
-                                        {formatNumber(project.totalStaked)}
-                                    </Typography>
-                                </Box>
-                                <Typography variant="caption" sx={{ color: '#888', fontSize: '0.7rem' }}>
-                                    Staked
-                                </Typography>
-                            </Box>
-                        </Grid>
-                    </Grid>
-
-                    {/* Action Buttons */}
-                    <Stack direction="row" spacing={1}>
-                        <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<Launch sx={{ fontSize: '1rem' }} />}
-                            href={project.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            component="a"
-                            sx={{
-                                flex: 1,
-                                background: 'linear-gradient(45deg, #00ff88, #4dffb0)',
-                                color: '#000',
-                                fontWeight: 'bold',
-                                fontSize: '0.8rem',
-                                py: 1,
-                                '&:hover': {
-                                    background: 'linear-gradient(45deg, #4dffb0, #00ff88)',
-                                    transform: 'translateY(-1px)',
-                                    boxShadow: '0 4px 12px rgba(0, 255, 136, 0.3)',
-                                }
-                            }}
-                        >
-                            Website
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<RateReview sx={{ fontSize: '1rem' }} />}
-                            onClick={handleReview}
-                            sx={{
-                                borderColor: '#ff6b6b',
-                                color: '#ff6b6b',
-                                fontWeight: 'bold',
-                                fontSize: '0.8rem',
-                                py: 1,
-                                position: 'relative',
-                                '&:hover': {
-                                    backgroundColor: alpha('#ff6b6b', 0.1),
-                                    borderColor: '#ff6b6b',
-                                    transform: 'translateY(-1px)',
-                                }
-                            }}
-                        >
-                            Review
-                            {/* Points indicator for review */}
-                            <Chip
-                                label="+100"
-                                size="small"
-                                sx={{
-                                    position: 'absolute',
-                                    top: -8,
-                                    right: -8,
-                                    backgroundColor: '#ff6b6b',
-                                    color: '#000',
-                                    fontSize: '0.6rem',
-                                    height: 16,
-                                    minWidth: 24,
-                                    fontWeight: 'bold',
-                                    '& .MuiChip-label': { px: 0.5 }
-                                }}
-                            />
-                        </Button>
-                        <IconButton
-                            size="medium"
-                            href={`https://twitter.com/${project.twitter.replace('@', '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            component="a"
-                            sx={{
-                                backgroundColor: '#000',
-                                color: '#000',
-                                border: '1px solid #000',
-                                '&:hover': {
-                                    backgroundColor: '#000',
-                                    color: 'white',
-                                    transform: 'translateY(-1px)',
-                                }
-                            }}
-                        >
-                            <X sx={{ fontSize: '1rem', color: '#FFF' }} />
-                        </IconButton>
-                        {project.github && (
+                        {/* Social Links */}
+                        <Stack direction="row" spacing={1} justifyContent="center">
                             <IconButton
-                                size="medium"
-                                href={project.github}
+                                size="small"
+                                href={`https://twitter.com/${project.twitter.replace('@', '')}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
                                 component="a"
                                 sx={{
                                     backgroundColor: '#000',
-                                    color: '#000',
+                                    color: '#FFF',
                                     border: '1px solid #000',
                                     '&:hover': {
                                         backgroundColor: '#000',
@@ -497,10 +629,32 @@ export default function ProjectCard({
                                     }
                                 }}
                             >
-                                <GitHub sx={{ fontSize: '1.2rem', color: '#FFF' }} />
+                                <X sx={{ fontSize: '1rem' }} />
                             </IconButton>
-                        )}
-                    </Stack>
+                            {project.github && (
+                                <IconButton
+                                    size="small"
+                                    href={project.github}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    component="a"
+                                    sx={{
+                                        backgroundColor: '#000',
+                                        color: '#FFF',
+                                        border: '1px solid #000',
+                                        '&:hover': {
+                                            backgroundColor: '#000',
+                                            color: 'white',
+                                            transform: 'translateY(-1px)',
+                                        }
+                                    }}
+                                >
+                                    <GitHub sx={{ fontSize: '1.2rem' }} />
+                                </IconButton>
+                            )}
+                        </Stack>
+                    </Box>
                 </CardContent>
             </Card>
 

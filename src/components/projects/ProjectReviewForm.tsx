@@ -1,3 +1,4 @@
+// src/components/projects/ProjectReviewForm.tsx (Updated to not render review form if user already reviewed)
 'use client';
 
 import {
@@ -40,7 +41,7 @@ export default function ProjectReviewForm({
     const [comment, setComment] = useState('');
     const [investment, setInvestment] = useState(1500);
     const [loading, setLoading] = useState(false);
-    const [hasReviewed, setHasReviewed] = useState(false);
+    const [hasReviewed, setHasReviewed] = useState<boolean | null>(null); // null = loading
     const [checkingReview, setCheckingReview] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
@@ -48,7 +49,10 @@ export default function ProjectReviewForm({
     // Check if user has already reviewed this project
     useEffect(() => {
         const checkExistingReview = async () => {
-            if (!authenticated || !user) return;
+            if (!authenticated || !user) {
+                setHasReviewed(null);
+                return;
+            }
 
             setCheckingReview(true);
             try {
@@ -56,6 +60,7 @@ export default function ProjectReviewForm({
                 setHasReviewed(hasReview);
             } catch (error) {
                 console.error('Error checking existing review:', error);
+                setHasReviewed(false); // Default to false on error
             } finally {
                 setCheckingReview(false);
             }
@@ -159,6 +164,54 @@ export default function ProjectReviewForm({
         return 'Very Poor';
     };
 
+    // Show loading state while checking review status
+    if (authenticated && (checkingReview || hasReviewed === null)) {
+        return (
+            <Card sx={{
+                background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
+                border: '1px solid #333',
+                borderRadius: 3,
+            }}>
+                <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                    <CircularProgress size={40} sx={{ color: '#00ff88', mb: 2 }} />
+                    <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
+                        Checking review status...
+                    </Typography>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    // Don't show review form if user is authenticated and has already reviewed
+    if (authenticated && hasReviewed) {
+        return (
+            <Card sx={{
+                background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
+                border: '1px solid #00ff88',
+                borderRadius: 3,
+            }}>
+                <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                    <CheckCircle sx={{ color: '#00ff88', fontSize: '3rem', mb: 2 }} />
+                    <Typography variant="h6" sx={{ color: '#00ff88', mb: 2, fontWeight: 'bold' }}>
+                        Thank You for Your Review!
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#b0b0b0', mb: 2 }}>
+                        You've already submitted a review for {projectName}. Your contribution helps the community make better decisions.
+                    </Typography>
+                    <Chip
+                        label="Review Submitted"
+                        sx={{
+                            backgroundColor: alpha('#00ff88', 0.1),
+                            color: '#00ff88',
+                            border: '1px solid #00ff88',
+                        }}
+                    />
+                </CardContent>
+            </Card>
+        );
+    }
+
+    // Show login prompt for unauthenticated users
     if (!authenticated) {
         return (
             <>
@@ -217,51 +270,7 @@ export default function ProjectReviewForm({
         );
     }
 
-    if (checkingReview) {
-        return (
-            <Card sx={{
-                background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
-                border: '1px solid #333',
-                borderRadius: 3,
-            }}>
-                <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                    <CircularProgress size={40} sx={{ color: '#00ff88', mb: 2 }} />
-                    <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
-                        Checking review status...
-                    </Typography>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    if (hasReviewed) {
-        return (
-            <Card sx={{
-                background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
-                border: '1px solid #00ff88',
-                borderRadius: 3,
-            }}>
-                <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                    <CheckCircle sx={{ color: '#00ff88', fontSize: '3rem', mb: 2 }} />
-                    <Typography variant="h6" sx={{ color: '#00ff88', mb: 2, fontWeight: 'bold' }}>
-                        Thank You for Your Review!
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#b0b0b0', mb: 2 }}>
-                        You've already submitted a review for {projectName}. Your contribution helps the community make better decisions.
-                    </Typography>
-                    <Chip
-                        label="Review Submitted"
-                        sx={{
-                            backgroundColor: alpha('#00ff88', 0.1),
-                            color: '#00ff88',
-                            border: '1px solid #00ff88',
-                        }}
-                    />
-                </CardContent>
-            </Card>
-        );
-    }
-
+    // Show the review form for authenticated users who haven't reviewed yet
     return (
         <>
             <Card sx={{
