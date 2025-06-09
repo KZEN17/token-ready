@@ -37,6 +37,7 @@ import { useBelieverActions } from '@/hooks/useBelieverPoints';
 import { useUser } from '@/hooks/useUser';
 import { ReviewService } from '@/lib/reviewService';
 import AuthDialog from '@/components/auth/AuthDialog';
+import TrackableShareButton from '../sharing/TrackableShareButton';
 
 interface Project {
     $id: string;
@@ -607,6 +608,11 @@ export default function ProjectCard({
                                 Website
                             </Button>
                             {renderReviewButton()}
+                            <TrackableShareButton
+                                project={project}
+                                variant="button"
+                                size="small"
+                            />
                         </Stack>
 
                         {/* Social Links */}

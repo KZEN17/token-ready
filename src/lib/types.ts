@@ -98,3 +98,55 @@ export interface BelieverActivity {
     description: string;
     createdAt: string;
 }
+export interface ShareTrackingData {
+    $id?: string;
+    shareId: string;          // Unique identifier for this share
+    userId: string;           // User who created the share
+    projectId: string;        // Project being shared
+    shareUrl: string;         // The generated trackable URL
+    twitterIntentUrl: string; // The Twitter intent URL
+
+    // Analytics
+    clickCount: number;       // How many times the link was clicked
+    shareCount: number;       // How many times it was actually shared
+    conversionCount: number;  // How many led to actual engagement
+
+    // Tracking events
+    events: ShareEvent[];     // Array of tracking events
+
+    // Status
+    pointsAwarded: boolean;   // Whether points have been awarded
+    verified: boolean;        // Whether the share was verified
+
+    // Timestamps
+    createdAt: string;
+    lastClickedAt?: string;
+    verifiedAt?: string;
+}
+
+export interface ShareEvent {
+    type: 'click' | 'twitter_open' | 'referral_visit' | 'share_detected';
+    timestamp: string;
+    userAgent?: string;
+    referrer?: string;
+    ip?: string;
+    metadata?: Record<string, any>;
+}
+
+export interface ShareGenerationResult {
+    shareId: string;
+    trackableUrl: string;
+    twitterIntentUrl: string;
+}
+
+export interface ShareVerificationResult {
+    isValidShare: boolean;
+    shareData?: ShareTrackingData;
+    shouldAwardPoints: boolean;
+}
+
+export interface PointsAwardResult {
+    success: boolean;
+    points?: number;
+    error?: string;
+}
