@@ -1,9 +1,8 @@
-// src/lib/trackableShareService.ts
+// src/lib/trackableShareService.ts - Fixed with working believer points
 import { BelieverPointsService } from './believerPointsService';
 import { databases, DATABASE_ID } from './appwrite';
 import { ID, Query } from 'appwrite';
 import { ShareGenerationResult, ShareTrackingData, ShareEvent, ShareVerificationResult, PointsAwardResult } from './types';
-
 
 // Collection ID for share tracking (add this to your Appwrite database)
 export const SHARE_TRACKING_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_SHARE_TRACKING_COLLECTION_ID || 'share_tracking';
@@ -31,8 +30,14 @@ export class TrackableShareService {
         const tweetText = this.generateTweetText(projectName, projectTicker, trackableUrl);
         const twitterIntentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
 
-        // Store tracking data
-        const trackingData: Omit<ShareTrackingData, '$id'> = {
+        // Store tracking data - Convert events array to JSON string
+        const initialEvent: ShareEvent = {
+            type: 'click',
+            timestamp: new Date().toISOString(),
+            metadata: { action: 'share_generated' }
+        };
+
+        const trackingData = {
             shareId,
             userId,
             projectId,
@@ -41,11 +46,7 @@ export class TrackableShareService {
             clickCount: 0,
             shareCount: 0,
             conversionCount: 0,
-            events: [{
-                type: 'click',
-                timestamp: new Date().toISOString(),
-                metadata: { action: 'share_generated' }
-            }],
+            events: JSON.stringify([initialEvent]),
             pointsAwarded: false,
             verified: false,
             createdAt: new Date().toISOString()
@@ -131,6 +132,8 @@ export class TrackableShareService {
 
             if (shouldAwardPoints) {
                 await this.markShareAsVerified(shareId);
+                // FIXED: Award points immediately when we detect a successful share
+                await this.awardSharePoints(shareId);
             }
 
             console.log(`🔗 Tracked referral visit for share: ${shareId}, from Twitter: ${isFromTwitter}`);
@@ -163,6 +166,8 @@ export class TrackableShareService {
                 return { success: false, error: 'Points already awarded' };
             }
 
+            console.log(`🎯 Attempting to award points for share: ${shareId} to user: ${shareData.userId}`);
+
             // Award believer points
             const result = await BelieverPointsService.awardPoints(
                 shareData.userId,
@@ -179,13 +184,14 @@ export class TrackableShareService {
             // Mark as awarded
             await this.markPointsAwarded(shareId);
 
-            console.log(`🎉 Awarded ${result.points} points for share: ${shareId}`);
+            console.log(`🎉 Successfully awarded ${result.points} points for share: ${shareId}`);
 
             return { success: true, points: result.points };
 
         } catch (error) {
             console.error('Failed to award share points:', error);
-            return { success: false, error: 'Failed to award points' };
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            return { success: false, error: `Failed to award points: ${errorMessage}` };
         }
     }
 
@@ -244,19 +250,18 @@ export class TrackableShareService {
                 timestamp: new Date().toISOString(),
                 metadata: {
                     method: 'popup_closed',
-                    confidence: 'medium' // Could be 'high', 'medium', 'low'
+                    confidence: 'medium'
                 }
             };
 
             await this.addTrackingEvent(shareId, event);
 
-            // Check for referral confirmation after a delay
+            // FIXED: Award points optimistically for popup closure
+            // This helps ensure users get points even if the referral tracking doesn't work perfectly
             const shareData = await this.getShareData(shareId);
             if (shareData && !shareData.pointsAwarded) {
-                // Wait a bit to see if we get a referral visit
-                setTimeout(() => {
-                    this.checkForReferralConfirmation(shareId);
-                }, 30000); // Wait 30 seconds
+                console.log(`🎯 Awarding points optimistically for popup closure: ${shareId}`);
+                await this.awardSharePoints(shareId);
             }
 
         } catch (error) {
@@ -285,7 +290,7 @@ export class TrackableShareService {
                 ]
             );
 
-            const shares = response.documents as unknown as ShareTrackingData[];
+            const shares = response.documents.map(doc => this.parseShareData(doc)) as ShareTrackingData[];
 
             const analytics = {
                 totalShares: shares.length,
@@ -306,6 +311,65 @@ export class TrackableShareService {
                 totalPointsEarned: 0,
                 recentShares: []
             };
+        }
+    }
+
+    /**
+     * NEW: Get users who shared a specific project
+     */
+    static async getProjectSharers(projectId: string, limit = 10): Promise<Array<{
+        userId: string;
+        shareId: string;
+        verified: boolean;
+        pointsAwarded: boolean;
+        createdAt: string;
+    }>> {
+        try {
+            const response = await databases.listDocuments(
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                [
+                    Query.equal('projectId', projectId),
+                    Query.equal('verified', true), // Only verified shares
+                    Query.orderDesc('createdAt'),
+                    Query.limit(limit)
+                ]
+            );
+
+            return response.documents.map(doc => ({
+                userId: doc.userId,
+                shareId: doc.shareId,
+                verified: doc.verified,
+                pointsAwarded: doc.pointsAwarded,
+                createdAt: doc.createdAt
+            }));
+
+        } catch (error) {
+            console.error('Failed to get project sharers:', error);
+            return [];
+        }
+    }
+
+    /**
+     * NEW: Check if a user has shared a specific project
+     */
+    static async hasUserSharedProject(userId: string, projectId: string): Promise<boolean> {
+        try {
+            const response = await databases.listDocuments(
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                [
+                    Query.equal('userId', userId),
+                    Query.equal('projectId', projectId),
+                    Query.equal('verified', true),
+                    Query.limit(1)
+                ]
+            );
+
+            return response.documents.length > 0;
+        } catch (error) {
+            console.error('Failed to check user share:', error);
+            return false;
         }
     }
 
@@ -364,11 +428,18 @@ ${trackableUrl}
             );
 
             return response.documents.length > 0 ?
-                response.documents[0] as unknown as ShareTrackingData : null;
+                this.parseShareData(response.documents[0]) : null;
         } catch (error) {
             console.error('Failed to get share data:', error);
             return null;
         }
+    }
+
+    private static parseShareData(doc: any): ShareTrackingData {
+        return {
+            ...doc,
+            events: typeof doc.events === 'string' ? JSON.parse(doc.events) : (doc.events || [])
+        } as ShareTrackingData;
     }
 
     private static async addTrackingEvent(shareId: string, event: ShareEvent): Promise<void> {
@@ -382,7 +453,7 @@ ${trackableUrl}
             SHARE_TRACKING_COLLECTION_ID,
             shareData.$id!,
             {
-                events: updatedEvents,
+                events: JSON.stringify(updatedEvents),
                 lastClickedAt: new Date().toISOString()
             }
         );
@@ -392,15 +463,19 @@ ${trackableUrl}
         shareId: string,
         field: 'clickCount' | 'shareCount' | 'conversionCount'
     ): Promise<void> {
-        const shareData = await this.getShareData(shareId);
-        if (!shareData) return;
+        try {
+            const shareData = await this.getShareData(shareId);
+            if (!shareData) return;
 
-        await databases.updateDocument(
-            DATABASE_ID,
-            SHARE_TRACKING_COLLECTION_ID,
-            shareData.$id!,
-            { [field]: shareData[field] + 1 }
-        );
+            await databases.updateDocument(
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                shareData.$id!,
+                { [field]: shareData[field] + 1 }
+            );
+        } catch (error) {
+            console.error(`Failed to increment ${field}:`, error);
+        }
     }
 
     private static async markShareAsVerified(shareId: string): Promise<void> {

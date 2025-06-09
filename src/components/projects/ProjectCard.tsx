@@ -1,4 +1,4 @@
-// src/components/projects/ProjectCard.tsx (Fixed with review status checking and consistent heights)
+// src/components/projects/ProjectCard.tsx - Add import for ProjectSharers
 'use client';
 
 import {
@@ -38,27 +38,11 @@ import { useUser } from '@/hooks/useUser';
 import { ReviewService } from '@/lib/reviewService';
 import AuthDialog from '@/components/auth/AuthDialog';
 import TrackableShareButton from '../sharing/TrackableShareButton';
+import ProjectSharers from './ProjectSharers'; // NEW IMPORT
+import { Project } from '@/lib/types';
+import ManualShareTest from '../sharing/ManualSHareTest';
 
-interface Project {
-    $id: string;
-    name: string;
-    ticker: string;
-    pitch: string;
-    description: string;
-    website: string;
-    github?: string;
-    twitter: string;
-    category: string;
-    status: string;
-    logoUrl?: string;
-    totalStaked: number;
-    believers: number;
-    reviews: number;
-    bobScore: number;
-    estimatedReturn: number;
-    upvotes: string[];
-    teamMembers: string[];
-}
+
 
 interface ProjectCardProps {
     project: Project;
@@ -69,9 +53,6 @@ interface ProjectCardProps {
     onToggleFavorite: (projectId: string) => void;
     onReview: (projectId: string) => void;
 }
-
-
-
 
 export default function ProjectCard({
     project,
@@ -87,7 +68,7 @@ export default function ProjectCard({
     const { user, authenticated } = useUser();
 
     // Review status state
-    const [hasReviewed, setHasReviewed] = useState<boolean | null>(null); // null = loading
+    const [hasReviewed, setHasReviewed] = useState<boolean | null>(null);
     const [checkingReview, setCheckingReview] = useState(false);
 
     // Points notification state
@@ -115,7 +96,7 @@ export default function ProjectCard({
                 setHasReviewed(hasUserReviewed);
             } catch (error) {
                 console.error('Error checking review status:', error);
-                setHasReviewed(false); // Default to false on error
+                setHasReviewed(false);
             } finally {
                 setCheckingReview(false);
             }
@@ -147,7 +128,6 @@ export default function ProjectCard({
 
         requireAuth(async () => {
             try {
-                // Check if user can perform upvote action
                 const canUpvote = await canPerformAction('upvote_project');
 
                 if (!canUpvote.canPerform) {
@@ -159,10 +139,8 @@ export default function ProjectCard({
                     return;
                 }
 
-                // Perform the upvote
                 onUpvote(project.$id);
 
-                // Award believer points (only if not already upvoted)
                 if (!isUpvoted) {
                     await awardUpvotePoints(project.$id);
                     setPointsSnackbar({
@@ -173,7 +151,6 @@ export default function ProjectCard({
                 }
             } catch (error) {
                 console.error('Error awarding upvote points:', error);
-                // Still perform the upvote even if points fail
                 onUpvote(project.$id);
             }
         }, 'upvote projects');
@@ -194,10 +171,8 @@ export default function ProjectCard({
         setPointsSnackbar(prev => ({ ...prev, open: false }));
     };
 
-    // Render review button based on authentication and review status
     const renderReviewButton = () => {
         if (!authenticated) {
-            // Show review button for unauthenticated users (will trigger auth dialog)
             return (
                 <Button
                     variant="outlined"
@@ -240,7 +215,6 @@ export default function ProjectCard({
         }
 
         if (checkingReview || hasReviewed === null) {
-            // Show loading state while checking review status
             return (
                 <Button
                     variant="outlined"
@@ -261,7 +235,6 @@ export default function ProjectCard({
         }
 
         if (hasReviewed) {
-            // Show "Reviewed" state for users who already reviewed
             return (
                 <Button
                     variant="outlined"
@@ -282,7 +255,6 @@ export default function ProjectCard({
             );
         }
 
-        // Show review button for authenticated users who haven't reviewed
         return (
             <Button
                 variant="outlined"
@@ -328,7 +300,7 @@ export default function ProjectCard({
         <>
             <Card
                 sx={{
-                    height: '500px', // Fixed height for consistency
+                    height: '540px', // Increased height for sharers section
                     display: 'flex',
                     flexDirection: 'column',
                     background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
@@ -419,7 +391,6 @@ export default function ProjectCard({
                                 }}
                             >
                                 {isUpvoted ? <ThumbUp /> : <ThumbUpOutlined />}
-                                {/* Points indicator */}
                                 {!isUpvoted && (
                                     <Chip
                                         label="+75"
@@ -480,7 +451,7 @@ export default function ProjectCard({
                         />
                     </Stack>
 
-                    {/* Pitch - Fixed height container */}
+                    {/* Pitch */}
                     <Box sx={{ mb: 2, height: '4.5em', overflow: 'hidden' }}>
                         <Typography
                             variant="body2"
@@ -497,7 +468,7 @@ export default function ProjectCard({
                         </Typography>
                     </Box>
 
-                    {/* Team Members Preview - Fixed height */}
+                    {/* Team Members Preview */}
                     <Box sx={{ mb: 2, height: '3em' }}>
                         {project.teamMembers && project.teamMembers.length > 0 && (
                             <>
@@ -521,7 +492,7 @@ export default function ProjectCard({
                         )}
                     </Box>
 
-                    {/* Stats Grid - Fixed height */}
+                    {/* Stats Grid */}
                     <Box sx={{ mb: 3, height: '4em' }}>
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 3 }}>
@@ -579,8 +550,8 @@ export default function ProjectCard({
                         </Grid>
                     </Box>
 
-                    {/* Action Buttons - Fixed at bottom */}
-                    <Box sx={{ mt: 'auto' }}>
+                    {/* Action Buttons */}
+                    <Box sx={{ mb: 2 }}>
                         <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                             <Button
                                 variant="contained"
@@ -614,33 +585,15 @@ export default function ProjectCard({
                                 size="small"
                             />
                         </Stack>
+                    </Box>
 
-                        {/* Social Links */}
-                        <Stack direction="row" spacing={1} justifyContent="center">
-                            <IconButton
-                                size="small"
-                                href={`https://twitter.com/${project.twitter.replace('@', '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                component="a"
-                                sx={{
-                                    backgroundColor: '#000',
-                                    color: '#FFF',
-                                    border: '1px solid #000',
-                                    '&:hover': {
-                                        backgroundColor: '#000',
-                                        color: 'white',
-                                        transform: 'translateY(-1px)',
-                                    }
-                                }}
-                            >
-                                <X sx={{ fontSize: '1rem' }} />
-                            </IconButton>
-                            {project.github && (
+                    {/* NEW: Sharers and Social Links Section */}
+                    <Box sx={{ mt: 'auto' }}>
+                        <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="center">
+                            <Stack direction="row" spacing={1}>
                                 <IconButton
                                     size="small"
-                                    href={project.github}
+                                    href={`https://twitter.com/${project.twitter.replace('@', '')}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
@@ -656,9 +609,33 @@ export default function ProjectCard({
                                         }
                                     }}
                                 >
-                                    <GitHub sx={{ fontSize: '1.2rem' }} />
+                                    <X sx={{ fontSize: '1rem' }} />
                                 </IconButton>
-                            )}
+                                {project.github && (
+                                    <IconButton
+                                        size="small"
+                                        href={project.github}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        component="a"
+                                        sx={{
+                                            backgroundColor: '#000',
+                                            color: '#FFF',
+                                            border: '1px solid #000',
+                                            '&:hover': {
+                                                backgroundColor: '#000',
+                                                color: 'white',
+                                                transform: 'translateY(-1px)',
+                                            }
+                                        }}
+                                    >
+                                        <GitHub sx={{ fontSize: '1.2rem' }} />
+                                    </IconButton>
+                                )}
+                            </Stack>
+                            {/* NEW: Compact sharers display */}
+                            <ProjectSharers projectId={project.$id} compact={true} limit={3} />
                         </Stack>
                     </Box>
                 </CardContent>

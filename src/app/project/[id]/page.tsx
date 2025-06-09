@@ -1,3 +1,4 @@
+// src/app/project/[id]/page.tsx - Updated with share tracking
 'use client';
 
 import {
@@ -15,8 +16,10 @@ import ProjectHeader from '@/components/projects/ProjectHeader';
 import ProjectInfo from '@/components/projects/ProjectInfo';
 import ProjectReviewForm from '@/components/projects/ProjectReviewForm';
 import RecentReviews from '@/components/projects/RecentReviews';
+import ProjectSharers from '@/components/projects/ProjectSharers'; // NEW
 import { ReviewService } from '@/lib/reviewService';
 import { useUser } from '@/hooks/useUser';
+import { useShareTracking } from '@/hooks/useShareTracking'; // NEW
 
 interface Project {
     $id: string;
@@ -51,6 +54,12 @@ interface ReviewStats {
 export default function ProjectDetailsPage() {
     const { id } = useParams<{ id: string }>();
     const { user, authenticated, updateUserPoints } = useUser();
+
+    // NEW: Add share tracking
+    const shareTracking = useShareTracking({
+        enableUrlCleanup: true,
+        showNotifications: true
+    });
 
     const [project, setProject] = useState<Project | null>(null);
     const [reviewStats, setReviewStats] = useState<ReviewStats>({
@@ -96,11 +105,6 @@ export default function ProjectDetailsPage() {
 
                 // Update project with latest review count if different
                 if (stats.totalReviews !== project.reviews) {
-                    // Optionally update the project in the database
-                    // await databases.updateDocument(DATABASE_ID, PROJECTS_COLLECTION_ID, project.$id, {
-                    //     reviews: stats.totalReviews
-                    // });
-
                     // Update local state
                     setProject(prev => prev ? { ...prev, reviews: stats.totalReviews } : null);
                 }
@@ -111,6 +115,18 @@ export default function ProjectDetailsPage() {
 
         fetchReviewStats();
     }, [project, reviewsKey]);
+
+    // NEW: Log share tracking status for debugging
+    useEffect(() => {
+        if (shareTracking.shareId) {
+            console.log('🔗 Share tracking detected:', {
+                shareId: shareTracking.shareId,
+                referrerUserId: shareTracking.referrerUserId,
+                isValidShare: shareTracking.isValidShare,
+                pointsAwarded: shareTracking.pointsAwarded
+            });
+        }
+    }, [shareTracking]);
 
     const handleUpvote = async () => {
         if (!project || !authenticated || !user) return;
@@ -165,7 +181,6 @@ export default function ProjectDetailsPage() {
                 project!.$id,
                 {
                     reviews: newStats.totalReviews,
-                    // You could also update other fields like average rating if you store it
                 }
             );
 
@@ -198,6 +213,22 @@ export default function ProjectDetailsPage() {
             py: 4
         }}>
             <Container maxWidth="xl">
+                {/* NEW: Share tracking notification */}
+                {shareTracking.isValidShare && shareTracking.pointsAwarded && (
+                    <Alert
+                        severity="success"
+                        sx={{
+                            mb: 4,
+                            backgroundColor: alpha('#00ff88', 0.1),
+                            color: '#00ff88',
+                            border: '1px solid #00ff88',
+                            borderRadius: 2,
+                        }}
+                    >
+                        🎉 Welcome from Twitter! Someone earned 150 Believer Points for sharing this project with you!
+                    </Alert>
+                )}
+
                 <Grid container spacing={4}>
                     {/* Project Header */}
                     <Grid size={{ xs: 12 }}>
@@ -249,6 +280,11 @@ export default function ProjectDetailsPage() {
                             </Box>
                         </Grid>
                     )}
+
+                    {/* NEW: Project Sharers Section */}
+                    <Grid size={{ xs: 12 }}>
+                        <ProjectSharers projectId={project.$id} compact={false} limit={10} />
+                    </Grid>
 
                     {/* Project Review Form */}
                     <Grid size={{ xs: 12, md: 8 }}>

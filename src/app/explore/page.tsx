@@ -46,6 +46,7 @@ interface Project {
     upvotes: string[];
     teamMembers: string[];
     createdAt: string;
+    simulatedInvestment: number;
 }
 
 export default function ExplorePage() {
