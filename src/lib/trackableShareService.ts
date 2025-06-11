@@ -1,17 +1,17 @@
-// src/lib/trackableShareService.ts - FIXED KEY METHODS
+// src/lib/trackableShareService.ts - UPDATED with Production URL and Reshare Prevention
 
 import { BelieverPointsService } from './believerPointsService';
 import { databases, DATABASE_ID } from './appwrite';
 import { ID, Query } from 'appwrite';
 import { ShareGenerationResult, ShareTrackingData, ShareEvent, ShareVerificationResult, PointsAwardResult } from './types';
 
-// FIXED: Use exact same collection ID as manual test
+// Use exact same collection ID as manual test
 export const SHARE_TRACKING_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_SHARE_TRACKING_COLLECTION_ID || 'share_tracking';
 
 export class TrackableShareService {
 
     /**
-     * FIXED: Generate trackable share - now matches manual test format exactly
+     * UPDATED: Generate trackable share with production URL and reshare prevention
      */
     static async generateTrackableShare(
         userId: string,
@@ -26,18 +26,25 @@ export class TrackableShareService {
             projectTicker
         });
 
-        // Generate unique share ID (same format as manual test)
+        // FIRST: Check if user has already shared this project
+        const existingShare = await this.getUserProjectShare(userId, projectId);
+        if (existingShare) {
+            console.log('❌ User has already shared this project:', existingShare);
+            throw new Error('You have already shared this project. Each user can only share a project once.');
+        }
+
+        // Generate unique share ID
         const shareId = this.generateShareId();
 
-        // Create trackable project URL
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://tokenready.io';
+        // UPDATED: Use production URL for deployed environment
+        const baseUrl = this.getBaseUrl();
         const trackableUrl = `${baseUrl}/project/${projectId}?share=${shareId}&ref=${userId}`;
 
         // Create Twitter intent with trackable URL
         const tweetText = this.generateTweetText(projectName, projectTicker, trackableUrl);
         const twitterIntentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
 
-        // FIXED: Store tracking data in EXACT same format as manual test
+        // Store tracking data in EXACT same format as manual test
         const trackingData = {
             shareId: shareId,
             userId: userId, // CRITICAL: This must be user.$id
@@ -50,7 +57,11 @@ export class TrackableShareService {
             events: JSON.stringify([{
                 type: 'share_generated',
                 timestamp: new Date().toISOString(),
-                metadata: { method: 'service_api' }
+                metadata: {
+                    method: 'service_api',
+                    baseUrl,
+                    environment: process.env.NODE_ENV
+                }
             }]),
             pointsAwarded: false,
             verified: false,
@@ -81,200 +92,6 @@ export class TrackableShareService {
                 shareId,
                 trackableUrl,
                 twitterIntentUrl
-            };
-        }
-    }
-
-    /**
-     * FIXED: Get project sharers - now with better debugging
-     */
-    static async getProjectSharers(projectId: string, limit = 10): Promise<Array<{
-        userId: string;
-        shareId: string;
-        verified: boolean;
-        pointsAwarded: boolean;
-        createdAt: string;
-    }>> {
-        try {
-            console.log(`🔍 TrackableShareService.getProjectSharers called with:`, {
-                projectId,
-                limit,
-                DATABASE_ID,
-                SHARE_TRACKING_COLLECTION_ID
-            });
-
-            const response = await databases.listDocuments(
-                DATABASE_ID,
-                SHARE_TRACKING_COLLECTION_ID,
-                [
-                    Query.equal('projectId', projectId),
-                    Query.orderDesc('createdAt'),
-                    Query.limit(limit)
-                ]
-            );
-
-            console.log(`📊 Raw database response:`, {
-                total: response.total,
-                documentsCount: response.documents.length,
-                firstDocument: response.documents[0] || 'No documents'
-            });
-
-            if (response.documents.length === 0) {
-                console.log(`ℹ️ No share documents found for project ${projectId}`);
-                return [];
-            }
-
-            // FIXED: Process and return the results with better validation
-            const result = response.documents.map((doc, index) => {
-                console.log(`📋 [${index}] Processing share document:`, {
-                    docId: doc.$id,
-                    userId: doc.userId,
-                    shareId: doc.shareId,
-                    verified: doc.verified,
-                    pointsAwarded: doc.pointsAwarded,
-                    createdAt: doc.createdAt,
-                    projectId: doc.projectId
-                });
-
-                // Validate required fields
-                if (!doc.userId || !doc.shareId) {
-                    console.warn(`⚠️ [${index}] Missing required fields in document:`, doc);
-                }
-
-                return {
-                    userId: doc.userId || 'unknown',
-                    shareId: doc.shareId || 'unknown',
-                    verified: Boolean(doc.verified),
-                    pointsAwarded: Boolean(doc.pointsAwarded),
-                    createdAt: doc.createdAt || new Date().toISOString()
-                };
-            });
-
-            console.log(`✅ Returning ${result.length} sharers:`, result);
-            return result;
-
-        } catch (error) {
-            console.error('❌ TrackableShareService.getProjectSharers failed:', error);
-
-            // Log debugging info
-            console.log(`🔍 Error context:`, {
-                projectId,
-                limit,
-                DATABASE_ID,
-                SHARE_TRACKING_COLLECTION_ID,
-                errorMessage: error instanceof Error ? error.message : 'Unknown error',
-                errorStack: error instanceof Error ? error.stack : undefined
-            });
-
-            return [];
-        }
-    }
-
-    /**
-     * FIXED: Track referral visit - optimistic points awarding
-     */
-    static async trackReferralVisit(
-        shareId: string,
-        referrer?: string,
-        userAgent?: string
-    ): Promise<ShareVerificationResult> {
-        try {
-            console.log(`🔗 Tracking referral visit for shareId: ${shareId}`);
-
-            // Get share data
-            const shareData = await this.getShareData(shareId);
-
-            if (!shareData) {
-                console.log(`❌ Share not found: ${shareId}`);
-                return { isValidShare: false, shouldAwardPoints: false };
-            }
-
-            console.log(`📊 Found share data:`, shareData);
-
-            // Track the referral visit
-            const event: ShareEvent = {
-                type: 'referral_visit',
-                timestamp: new Date().toISOString(),
-                referrer,
-                userAgent,
-                metadata: { fromShare: true }
-            };
-
-            await this.addTrackingEvent(shareId, event);
-            await this.incrementCounter(shareId, 'conversionCount');
-
-            // FIXED: More aggressive point awarding
-            const isFromTwitter = this.isTwitterReferrer(referrer);
-            const shouldAwardPoints = !shareData.pointsAwarded; // Award if not already awarded
-
-            console.log(`🎯 Share analysis:`, {
-                isFromTwitter,
-                alreadyAwarded: shareData.pointsAwarded,
-                shouldAwardPoints
-            });
-
-            if (shouldAwardPoints) {
-                console.log(`🎉 Awarding points for successful referral visit`);
-                await this.markShareAsVerified(shareId);
-                await this.awardSharePoints(shareId);
-            }
-
-            return {
-                isValidShare: true,
-                shareData,
-                shouldAwardPoints
-            };
-
-        } catch (error) {
-            console.error('❌ Failed to track referral visit:', error);
-            return { isValidShare: false, shouldAwardPoints: false };
-        }
-    }
-
-    /**
-     * Get analytics for a user's shares
-     */
-    static async getUserShareAnalytics(userId: string): Promise<{
-        totalShares: number;
-        totalClicks: number;
-        totalConversions: number;
-        totalPointsEarned: number;
-        recentShares: ShareTrackingData[];
-    }> {
-        try {
-            console.log(`📊 Getting share analytics for user: ${userId}`);
-
-            const response = await databases.listDocuments(
-                DATABASE_ID,
-                SHARE_TRACKING_COLLECTION_ID,
-                [
-                    Query.equal('userId', userId),
-                    Query.orderDesc('createdAt'),
-                    Query.limit(50)
-                ]
-            );
-
-            const shares = response.documents.map(doc => this.parseShareData(doc)) as ShareTrackingData[];
-
-            const analytics = {
-                totalShares: shares.length,
-                totalClicks: shares.reduce((sum, share) => sum + share.clickCount, 0),
-                totalConversions: shares.reduce((sum, share) => sum + share.conversionCount, 0),
-                totalPointsEarned: shares.filter(share => share.pointsAwarded).length * 150,
-                recentShares: shares.slice(0, 10)
-            };
-
-            console.log(`📊 User analytics:`, analytics);
-            return analytics;
-
-        } catch (error) {
-            console.error('❌ Failed to get user share analytics:', error);
-            return {
-                totalShares: 0,
-                totalClicks: 0,
-                totalConversions: 0,
-                totalPointsEarned: 0,
-                recentShares: []
             };
         }
     }
@@ -331,6 +148,141 @@ export class TrackableShareService {
     }
 
     /**
+     * Get project sharers with better debugging
+     */
+    static async getProjectSharers(projectId: string, limit = 10): Promise<Array<{
+        userId: string;
+        shareId: string;
+        verified: boolean;
+        pointsAwarded: boolean;
+        createdAt: string;
+    }>> {
+        try {
+            console.log(`🔍 TrackableShareService.getProjectSharers called with:`, {
+                projectId,
+                limit,
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID
+            });
+
+            const response = await databases.listDocuments(
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                [
+                    Query.equal('projectId', projectId),
+                    Query.orderDesc('createdAt'),
+                    Query.limit(limit)
+                ]
+            );
+
+            console.log(`📊 Raw database response:`, {
+                total: response.total,
+                documentsCount: response.documents.length,
+                firstDocument: response.documents[0] || 'No documents'
+            });
+
+            if (response.documents.length === 0) {
+                console.log(`ℹ️ No share documents found for project ${projectId}`);
+                return [];
+            }
+
+            const result = response.documents.map((doc, index) => {
+                console.log(`📋 [${index}] Processing share document:`, {
+                    docId: doc.$id,
+                    userId: doc.userId,
+                    shareId: doc.shareId,
+                    verified: doc.verified,
+                    pointsAwarded: doc.pointsAwarded,
+                    createdAt: doc.createdAt,
+                    projectId: doc.projectId
+                });
+
+                // Validate required fields
+                if (!doc.userId || !doc.shareId) {
+                    console.warn(`⚠️ [${index}] Missing required fields in document:`, doc);
+                }
+
+                return {
+                    userId: doc.userId || 'unknown',
+                    shareId: doc.shareId || 'unknown',
+                    verified: Boolean(doc.verified),
+                    pointsAwarded: Boolean(doc.pointsAwarded),
+                    createdAt: doc.createdAt || new Date().toISOString()
+                };
+            });
+
+            console.log(`✅ Returning ${result.length} sharers:`, result);
+            return result;
+
+        } catch (error) {
+            console.error('❌ TrackableShareService.getProjectSharers failed:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Track referral visit with enhanced verification
+     */
+    static async trackReferralVisit(
+        shareId: string,
+        referrer?: string,
+        userAgent?: string
+    ): Promise<ShareVerificationResult> {
+        try {
+            console.log(`🔗 Tracking referral visit for shareId: ${shareId}`);
+
+            // Get share data
+            const shareData = await this.getShareData(shareId);
+
+            if (!shareData) {
+                console.log(`❌ Share not found: ${shareId}`);
+                return { isValidShare: false, shouldAwardPoints: false };
+            }
+
+            console.log(`📊 Found share data:`, shareData);
+
+            // Track the referral visit
+            const event: ShareEvent = {
+                type: 'referral_visit',
+                timestamp: new Date().toISOString(),
+                referrer,
+                userAgent,
+                metadata: { fromShare: true }
+            };
+
+            await this.addTrackingEvent(shareId, event);
+            await this.incrementCounter(shareId, 'conversionCount');
+
+            // Enhanced point awarding logic
+            const isFromTwitter = this.isTwitterReferrer(referrer);
+            const shouldAwardPoints = !shareData.pointsAwarded; // Award if not already awarded
+
+            console.log(`🎯 Share analysis:`, {
+                isFromTwitter,
+                alreadyAwarded: shareData.pointsAwarded,
+                shouldAwardPoints,
+                referrer
+            });
+
+            if (shouldAwardPoints) {
+                console.log(`🎉 Awarding points for successful referral visit`);
+                await this.markShareAsVerified(shareId);
+                await this.awardSharePoints(shareId);
+            }
+
+            return {
+                isValidShare: true,
+                shareData,
+                shouldAwardPoints
+            };
+
+        } catch (error) {
+            console.error('❌ Failed to track referral visit:', error);
+            return { isValidShare: false, shouldAwardPoints: false };
+        }
+    }
+
+    /**
      * Award points for a successful share
      */
     static async awardSharePoints(shareId: string): Promise<PointsAwardResult> {
@@ -351,7 +303,7 @@ export class TrackableShareService {
 
             console.log(`🎯 Awarding points to user: ${shareData.userId} for project: ${shareData.projectId}`);
 
-            // Award believer points using the same service as manual test
+            // Award believer points
             const result = await BelieverPointsService.awardPoints(
                 shareData.userId,
                 'create_tweet',
@@ -378,7 +330,69 @@ export class TrackableShareService {
         }
     }
 
+    /**
+     * Get user's share analytics
+     */
+    static async getUserShareAnalytics(userId: string): Promise<{
+        totalShares: number;
+        totalClicks: number;
+        totalConversions: number;
+        totalPointsEarned: number;
+        recentShares: ShareTrackingData[];
+    }> {
+        try {
+            console.log(`📊 Getting share analytics for user: ${userId}`);
+
+            const response = await databases.listDocuments(
+                DATABASE_ID,
+                SHARE_TRACKING_COLLECTION_ID,
+                [
+                    Query.equal('userId', userId),
+                    Query.orderDesc('createdAt'),
+                    Query.limit(50)
+                ]
+            );
+
+            const shares = response.documents.map(doc => this.parseShareData(doc)) as ShareTrackingData[];
+
+            const analytics = {
+                totalShares: shares.length,
+                totalClicks: shares.reduce((sum, share) => sum + share.clickCount, 0),
+                totalConversions: shares.reduce((sum, share) => sum + share.conversionCount, 0),
+                totalPointsEarned: shares.filter(share => share.pointsAwarded).length * 150,
+                recentShares: shares.slice(0, 10)
+            };
+
+            console.log(`📊 User analytics:`, analytics);
+            return analytics;
+
+        } catch (error) {
+            console.error('❌ Failed to get user share analytics:', error);
+            return {
+                totalShares: 0,
+                totalClicks: 0,
+                totalConversions: 0,
+                totalPointsEarned: 0,
+                recentShares: []
+            };
+        }
+    }
+
     // Private Helper Methods
+
+    /**
+     * Get the correct base URL for the environment
+     */
+    private static getBaseUrl(): string {
+        // In production, always use the deployed URL
+        if (process.env.NODE_ENV === 'production') {
+            return 'https://tokenready.vercel.app';
+        }
+
+        // In development, use local or environment URL
+        return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    }
+
     private static generateShareId(): string {
         return `share_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
