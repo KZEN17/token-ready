@@ -24,30 +24,8 @@ import EmptyState from '@/components/explore/EmptyState';
 import FloatingActionButton from '@/components/explore/FloatingActionButton';
 import ProjectCard from '@/components/projects/ProjectCard';
 import AuthDialog from '@/components/auth/AuthDialog';
+import { Project } from '@/lib/types';
 
-interface Project {
-    $id: string;
-    name: string;
-    ticker: string;
-    pitch: string;
-    description: string;
-    website: string;
-    github?: string;
-    twitter: string;
-    category: string;
-    status: string;
-    launchDate?: string;
-    logoUrl?: string;
-    totalStaked: number;
-    believers: number;
-    reviews: number;
-    bobScore: number;
-    estimatedReturn: number;
-    upvotes: string[];
-    teamMembers: string[];
-    createdAt: string;
-    simulatedInvestment: number;
-}
 
 export default function ExplorePage() {
     const router = useRouter();
