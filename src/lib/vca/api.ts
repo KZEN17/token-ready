@@ -1,4 +1,4 @@
-// src/lib/vca/api.ts - FIXED VERSION
+// src/lib/vca/api.ts - UPDATED to use projectId consistently
 import { VCAMetadata, VCAActivity, VCAMapping } from '../types';
 import { VCAProtocol } from './protocol';
 import { AppwriteVCAStorage } from './storage';
@@ -10,7 +10,6 @@ export class VCAApi {
     /**
      * Create a new VCA for a project
      */
-    // Add this to your createVCA method in src/lib/vca/api.ts
     static async createVCA(projectId: string, owner: string): Promise<{ address: string, metadata: VCAMetadata }> {
         console.log(`VCAApi.createVCA: Creating VCA for projectId=${projectId}, owner=${owner}`);
 
@@ -18,7 +17,7 @@ export class VCAApi {
             // Check if VCA already exists for this project ID
             let existing = null;
             try {
-                existing = await vcaStorage.getVCABySlug(projectId);
+                existing = await vcaStorage.getVCAByProjectId(projectId);
                 console.log(`Checked for existing VCA with projectId=${projectId}, result:`, existing);
             } catch (existingError) {
                 console.error(`Error checking for existing VCA:`, existingError);
@@ -31,7 +30,7 @@ export class VCAApi {
 
             // Create new VCA
             console.log(`Creating new VCA with projectId=${projectId}, owner=${owner}`);
-            // Use the project ID as the slug parameter in the VCAProtocol.createVCA call
+            // Use the project ID as the parameter in the VCAProtocol.createVCA call
             const vca = VCAProtocol.createVCA(projectId, owner);
             console.log(`Created new VCA object:`, vca);
 
@@ -80,16 +79,12 @@ export class VCAApi {
             return { address, metadata };
         } catch (error) {
             console.error(`Failed to get VCA for address=${address}:`, error);
-            throw new Error(`Failed to get VCA:  'Unknown error'}`);
+            throw new Error(`Failed to get VCA: 'Unknown error'`);
         }
     }
 
     /**
-     * Get VCA by project slug
-     */
-    /**
      * Get VCA by project ID
-     * This replaces the previous getVCABySlug method
      */
     static async getVCAByProjectId(projectId: string): Promise<{ address: string, metadata: VCAMetadata } | null> {
         console.log(`VCAApi.getVCAByProjectId: Getting VCA for projectId=${projectId}`);
@@ -99,10 +94,8 @@ export class VCAApi {
             const normalizedProjectId = projectId.trim();
             console.log(`Normalized projectId: ${normalizedProjectId}`);
 
-            // Use the project ID as the slug in the storage call
-            // You could rename the method in vcaStorage as well, but for simplicity
-            // we'll keep using the existing method with the new parameter
-            const result = await vcaStorage.getVCABySlug(normalizedProjectId);
+            // Use the project ID in the storage call
+            const result = await vcaStorage.getVCAByProjectId(normalizedProjectId);
             console.log(`Result for projectId=${normalizedProjectId}:`, result);
 
             if (!result) {
@@ -139,7 +132,7 @@ export class VCAApi {
             return results;
         } catch (error) {
             console.error(`Failed to list VCAs:`, error);
-            throw new Error(`Failed to list VCAs:  'Unknown error'}`);
+            throw new Error(`Failed to list VCAs: 'Unknown error'`);
         }
     }
 
@@ -167,7 +160,7 @@ export class VCAApi {
             console.log(`Activity added to VCA ${vcaAddress}`);
         } catch (error) {
             console.error(`Failed to add activity to VCA ${vcaAddress}:`, error);
-            throw new Error(`Failed to add activity:  'Unknown error'}`);
+            throw new Error(`Failed to add activity: 'Unknown error'`);
         }
     }
 
@@ -189,7 +182,7 @@ export class VCAApi {
             return activities;
         } catch (error) {
             console.error(`Failed to get activities for VCA ${vcaAddress}:`, error);
-            throw new Error(`Failed to get activities:  'Unknown error'}`);
+            throw new Error(`Failed to get activities: 'Unknown error'`);
         }
     }
 
@@ -226,7 +219,7 @@ export class VCAApi {
             return mapping;
         } catch (error) {
             console.error(`Failed to map VCA ${vcaAddress} to contract ${tokenAddress}:`, error);
-            throw new Error(`Failed to map to contract:  'Unknown error'}`);
+            throw new Error(`Failed to map to contract: 'Unknown error'`);
         }
     }
 
@@ -248,7 +241,7 @@ export class VCAApi {
             return mapping;
         } catch (error) {
             console.error(`Failed to get mapping for VCA ${vcaAddress}:`, error);
-            throw new Error(`Failed to get mapping:  'Unknown error'}`);
+            throw new Error(`Failed to get mapping: 'Unknown error'`);
         }
     }
 
@@ -270,7 +263,7 @@ export class VCAApi {
             return result;
         } catch (error) {
             console.error(`Failed to get VCA by token address ${tokenAddress}:`, error);
-            throw new Error(`Failed to get VCA by token address:  'Unknown error'}`);
+            throw new Error(`Failed to get VCA by token address: 'Unknown error'`);
         }
     }
 }

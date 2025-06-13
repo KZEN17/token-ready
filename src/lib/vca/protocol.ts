@@ -1,22 +1,22 @@
-// src/lib/vca/protocol.ts - FIXED VERSION
+// src/lib/vca/protocol.ts - UPDATED to use projectId consistently
 import { ethers } from 'ethers';
 import { VCAMapping, VCAMetadata } from '../types';
 
 export class VCAProtocol {
     /**
-     * Generate a VCA address from a project slug
+     * Generate a VCA address from a project ID
      * 
-     * @param slug Project slug
+     * @param projectId Project identifier
      * @param timestamp Optional timestamp or salt
      * @returns EVM-compatible address
      */
-    static generateAddress(slug: string, timestamp: string = Date.now().toString()): string {
+    static generateAddress(projectId: string, timestamp: string = Date.now().toString()): string {
         try {
-            console.log(`Generating VCA address for slug: ${slug}, timestamp: ${timestamp}`);
+            console.log(`Generating VCA address for projectId: ${projectId}, timestamp: ${timestamp}`);
 
-            // Create a hash of the slug + timestamp
+            // Create a hash of the projectId + timestamp
             const hash = ethers.keccak256(
-                ethers.toUtf8Bytes(slug + timestamp)
+                ethers.toUtf8Bytes(projectId + timestamp)
             );
 
             console.log(`Generated hash: ${hash}`);
@@ -31,29 +31,29 @@ export class VCAProtocol {
             return address;
         } catch (error) {
             console.error('Error generating VCA address:', error);
-            throw new Error(`Failed to generate VCA address: 'Unknown error'}`);
+            throw new Error(`Failed to generate VCA address: 'Unknown error'`);
         }
     }
 
     /**
      * Create a new VCA for a project
      * 
-     * @param slug Project slug
+     * @param projectId Project identifier
      * @param owner Owner address or Twitter handle
      * @returns VCA object with address and metadata
      */
-    static createVCA(slug: string, owner: string): { address: string, metadata: VCAMetadata } {
-        console.log(`Creating VCA for slug: ${slug}, owner: ${owner}`);
+    static createVCA(projectId: string, owner: string): { address: string, metadata: VCAMetadata } {
+        console.log(`Creating VCA for projectId: ${projectId}, owner: ${owner}`);
 
         // Sanitize inputs
-        const sanitizedSlug = slug.trim().toLowerCase();
+        const sanitizedProjectId = projectId.trim().toLowerCase();
         const sanitizedOwner = owner.trim();
 
         const timestamp = Date.now().toString();
-        const address = this.generateAddress(sanitizedSlug, timestamp);
+        const address = this.generateAddress(sanitizedProjectId, timestamp);
 
         const metadata: VCAMetadata = {
-            projectSlug: sanitizedSlug,
+            projectId: sanitizedProjectId,
             owner: sanitizedOwner,
             signalScore: 0,
             uniqueBackers: 0,

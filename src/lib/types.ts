@@ -179,14 +179,14 @@ export interface ProjectWithCreator extends Project {
     creator?: ProjectCreator;
 }
 export interface VCAMetadata {
-    projectId: string;        // Unique project identifier
-    owner: string;              // Owner address or Twitter handle
-    signalScore: number;        // Combined score from backings, shares, reviews
-    uniqueBackers: number;      // Number of unique backers
-    reviews: number;            // Number of reviews
-    followers: number;          // Number of followers
-    createdAt: string;          // Creation timestamp
-    tokenAddress?: string;      // Future token address mapping (optional)
+    projectId: string;        // Project identifier (changed from projectSlug)
+    owner: string;            // Owner address or Twitter handle
+    signalScore: number;      // Combined score from backings, shares, reviews
+    uniqueBackers: number;    // Number of unique backers
+    reviews: number;          // Number of reviews
+    followers: number;        // Number of followers
+    createdAt: string;        // Creation timestamp
+    tokenAddress?: string;    // Future token address mapping (optional)
 }
 
 export interface VCAActivity {

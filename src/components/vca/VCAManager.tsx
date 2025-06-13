@@ -1,4 +1,4 @@
-// src/components/vca/VCAManager.tsx
+// src/components/vca/VCAManager.tsx - UPDATED to use projectId consistently
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -33,7 +33,7 @@ export default function VCAManager() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [projectSlug, setProjectSlug] = useState('');
+    const [projectId, setProjectId] = useState('');
     const [currentVCAs, setCurrentVCAs] = useState<Array<{ address: string; metadata: VCAMetadata }>>([]);
     const [selectedVCA, setSelectedVCA] = useState<{ address: string; metadata: VCAMetadata } | null>(null);
     const [tokenAddress, setTokenAddress] = useState('');
@@ -67,8 +67,8 @@ export default function VCAManager() {
             return;
         }
 
-        if (!projectSlug.trim()) {
-            setError('Project slug is required');
+        if (!projectId.trim()) {
+            setError('Project ID is required');
             return;
         }
 
@@ -80,10 +80,10 @@ export default function VCAManager() {
             // Owner will be either Twitter handle or user ID
             const owner = user.username || user.$id;
 
-            const result = await VCAApi.createVCA(projectSlug.trim(), owner);
+            const result = await VCAApi.createVCA(projectId.trim(), owner);
 
             setSuccess(`VCA created successfully with address: ${result.address}`);
-            setProjectSlug('');
+            setProjectId('');
 
             // Refresh VCA list
             await loadVCAs();
@@ -238,10 +238,10 @@ export default function VCAManager() {
 
                             <TextField
                                 fullWidth
-                                label="Project Slug"
+                                label="Project ID"
                                 placeholder="e.g. vader-ai"
-                                value={projectSlug}
-                                onChange={(e) => setProjectSlug(e.target.value)}
+                                value={projectId}
+                                onChange={(e) => setProjectId(e.target.value)}
                                 sx={{
                                     mb: 3,
                                     '& .MuiOutlinedInput-root': {
@@ -262,7 +262,7 @@ export default function VCAManager() {
                                 variant="contained"
                                 fullWidth
                                 onClick={handleCreateVCA}
-                                disabled={loading || !projectSlug.trim() || !authenticated}
+                                disabled={loading || !projectId.trim() || !authenticated}
                                 sx={{
                                     py: 1.5,
                                     background: 'linear-gradient(45deg, #00ff88, #4dffb0)',
@@ -335,7 +335,7 @@ export default function VCAManager() {
                                                 >
                                                     <TableCell>
                                                         <Typography variant="body2" fontWeight="bold">
-                                                            {vca.metadata.projectSlug}
+                                                            {vca.metadata.projectId}
                                                         </Typography>
                                                         <Typography variant="caption" color="text.secondary">
                                                             {vca.metadata.owner}
@@ -407,7 +407,7 @@ export default function VCAManager() {
                                                 Project
                                             </Typography>
                                             <Typography variant="h6" sx={{ color: 'white' }}>
-                                                {selectedVCA.metadata.projectSlug}
+                                                {selectedVCA.metadata.projectId}
                                             </Typography>
                                         </Box>
 

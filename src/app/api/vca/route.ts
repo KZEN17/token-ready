@@ -1,19 +1,30 @@
-// src/app/api/vca/route.ts - FIXED VERSION
+// src/app/api/vca/route.ts - COMPLETE REWRITE
 import { NextRequest, NextResponse } from 'next/server';
 import { VCAApi } from '@/lib/vca/api';
 import { VCAProtocol } from '@/lib/vca/protocol';
 import { VCAActivity } from '@/lib/types';
 
+/**
+ * GET handler for VCA API routes
+ * 
+ * Supported actions:
+ * - get: Get a VCA by address
+ * - getByProjectId: Get a VCA by project ID
+ * - activities: Get activities for a VCA
+ * - validate: Validate a VCA address
+ * - mapping: Get a mapping for a VCA
+ * - list: List all VCAs (default)
+ */
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action') || 'list';
     const address = searchParams.get('address');
-    const slug = searchParams.get('slug');
+    const projectId = searchParams.get('projectId');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
     // Log the request parameters for debugging
-    console.log(`VCA API GET request: action=${action}, address=${address}, slug=${slug}, limit=${limit}, offset=${offset}`);
+    console.log(`[API] VCA GET request: action=${action}, address=${address}, projectId=${projectId}, limit=${limit}, offset=${offset}`);
 
     try {
         switch (action) {
@@ -42,34 +53,33 @@ export async function GET(request: NextRequest) {
                 }
                 return NextResponse.json(vca);
 
-            case 'getBySlug':
-                if (!slug) {
+            case 'getByProjectId':
+                if (!projectId) {
                     return NextResponse.json(
-                        { error: 'Slug parameter is required' },
+                        { error: 'ProjectId parameter is required' },
                         { status: 400 }
                     );
                 }
 
-                console.log(`API Route: Getting VCA by slug=${slug}`);
+                console.log(`[API] Getting VCA by projectId=${projectId}`);
 
                 try {
-                    const vcaBySlug = await VCAApi.getVCABySlug(slug);
+                    const vcaByProjectId = await VCAApi.getVCAByProjectId(projectId);
 
-                    // IMPORTANT: This is the key fix - handle null result properly
-                    if (!vcaBySlug) {
-                        console.log(`API Route: No VCA found for slug=${slug}`);
+                    if (!vcaByProjectId) {
+                        console.log(`[API] No VCA found for projectId=${projectId}`);
                         return NextResponse.json(
-                            { error: 'VCA not found for this slug' },
+                            { error: 'VCA not found for this project ID' },
                             { status: 404 }
                         );
                     }
 
-                    console.log(`API Route: Found VCA for slug=${slug}:`, vcaBySlug);
-                    return NextResponse.json(vcaBySlug);
+                    console.log(`[API] Found VCA for projectId=${projectId}:`, vcaByProjectId);
+                    return NextResponse.json(vcaByProjectId);
                 } catch (error) {
-                    console.error(`API Route: Error getting VCA by slug=${slug}:`, error);
+                    console.error(`[API] Error getting VCA by projectId=${projectId}:`, error);
                     return NextResponse.json(
-                        { error: 'Failed to get VCA by slug' },
+                        { error: 'Failed to get VCA by project ID' },
                         { status: 500 }
                     );
                 }
@@ -134,7 +144,7 @@ export async function GET(request: NextRequest) {
                 return NextResponse.json(vcas);
         }
     } catch (error: any) {
-        console.error('VCA API GET error:', error);
+        console.error('[API] VCA GET error:', error);
         return NextResponse.json(
             { error: error.message || 'Failed to process VCA request' },
             { status: 500 }
@@ -142,19 +152,27 @@ export async function GET(request: NextRequest) {
     }
 }
 
+/**
+ * POST handler for VCA API routes
+ * 
+ * Supported actions:
+ * - create: Create a new VCA
+ * - mapToContract: Map a VCA to a token contract
+ * - addActivity: Add activity to a VCA
+ */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { action, slug, owner, address, tokenAddress, userId, activityType, details } = body;
+        const { action, projectId, owner, address, tokenAddress, userId, activityType, details } = body;
 
         // Log the request parameters for debugging
-        console.log(`VCA API POST request: action=${action}`, body);
+        console.log(`[API] VCA POST request: action=${action}`, body);
 
         switch (action) {
             case 'create':
-                if (!slug || !slug.trim()) {
+                if (!projectId || !projectId.trim()) {
                     return NextResponse.json(
-                        { error: 'Slug parameter is required and cannot be empty' },
+                        { error: 'ProjectId parameter is required and cannot be empty' },
                         { status: 400 }
                     );
                 }
@@ -167,10 +185,10 @@ export async function POST(request: NextRequest) {
                 }
 
                 try {
-                    const newVca = await VCAApi.createVCA(slug.trim(), owner.trim());
+                    const newVca = await VCAApi.createVCA(projectId.trim(), owner.trim());
                     return NextResponse.json(newVca);
                 } catch (err: any) {
-                    console.error('VCA creation failed:', err);
+                    console.error('[API] VCA creation failed:', err);
                     return NextResponse.json(
                         { error: err.message || 'VCA creation failed' },
                         { status: 500 }
@@ -211,7 +229,7 @@ export async function POST(request: NextRequest) {
                     const mapping = await VCAApi.mapToContract(address, tokenAddress);
                     return NextResponse.json(mapping);
                 } catch (err: any) {
-                    console.error('VCA mapping failed:', err);
+                    console.error('[API] VCA mapping failed:', err);
                     return NextResponse.json(
                         { error: err.message || 'VCA mapping failed' },
                         { status: 500 }
@@ -259,7 +277,7 @@ export async function POST(request: NextRequest) {
                     await VCAApi.addActivity(address, activity);
                     return NextResponse.json({ success: true });
                 } catch (err: any) {
-                    console.error('Adding activity failed:', err);
+                    console.error('[API] Adding activity failed:', err);
                     return NextResponse.json(
                         { error: err.message || 'Failed to add activity' },
                         { status: 500 }
@@ -273,7 +291,7 @@ export async function POST(request: NextRequest) {
                 );
         }
     } catch (error: any) {
-        console.error('VCA API POST error:', error);
+        console.error('[API] VCA POST error:', error);
         return NextResponse.json(
             { error: error.message || 'Failed to process VCA request' },
             { status: 500 }

@@ -1,10 +1,10 @@
-// src/lib/vca/storage.ts - FIXED VERSION
+// src/lib/vca/storage.ts - COMPLETE REWRITE
 import { ID, Query } from 'appwrite';
 import { databases, DATABASE_ID } from '../appwrite';
 import { VCAMetadata, VCAActivity, VCAMapping } from '../types';
 import { VCAProtocol } from './protocol';
 
-// Collection IDs - replace with your actual collection IDs
+// Collection IDs from environment variables
 const VCA_COLLECTION = process.env.NEXT_PUBLIC_APPWRITE_VCA_COLLECTION_ID || 'vcas';
 const VCA_ACTIVITY_COLLECTION = process.env.NEXT_PUBLIC_APPWRITE_VCA_ACTIVITY_COLLECTION_ID || 'vca_activities';
 const VCA_MAPPING_COLLECTION = process.env.NEXT_PUBLIC_APPWRITE_VCA_MAPPING_COLLECTION_ID || 'vca_mappings';
@@ -13,107 +13,93 @@ const VCA_MAPPING_COLLECTION = process.env.NEXT_PUBLIC_APPWRITE_VCA_MAPPING_COLL
  * Appwrite implementation of VCA storage
  */
 export class AppwriteVCAStorage {
-    // Fixed version with consistent field naming
+    /**
+     * Save a VCA to the database
+     * 
+     * @param address The VCA address
+     * @param metadata The VCA metadata
+     */
     async saveVCA(address: string, metadata: VCAMetadata): Promise<void> {
         try {
-            console.log(`Attempting to save VCA with address: ${address}`, metadata);
+            console.log(`[Storage] Saving VCA with address: ${address}`, metadata);
 
             // Convert metadata to a format suitable for Appwrite
-            // This ensures only valid fields are included
             const documentData = {
-                projectId: metadata.projectId, // Changed from projectSlug to projectId for consistency
+                projectId: metadata.projectId,
                 owner: metadata.owner,
                 signalScore: metadata.signalScore || 0,
                 uniqueBackers: metadata.uniqueBackers || 0,
                 reviews: metadata.reviews || 0,
                 followers: metadata.followers || 0,
                 createdAt: metadata.createdAt,
-                // Only include tokenAddress if it exists
                 ...(metadata.tokenAddress ? { tokenAddress: metadata.tokenAddress } : {})
             };
 
-            console.log('Formatted document data:', documentData);
+            console.log('[Storage] Prepared document data:', documentData);
 
-            // Check if document exists first using list instead of get
-            // This avoids permission errors if the document doesn't exist
-            const existing = await databases.listDocuments(
-                DATABASE_ID,
-                VCA_COLLECTION,
-                [Query.equal('$id', address)]
-            );
+            // Always use a consistent ID format - the VCA address
+            // First check if it already exists
+            try {
+                const existingDoc = await databases.getDocument(
+                    DATABASE_ID,
+                    VCA_COLLECTION,
+                    address
+                );
 
-            if (existing.documents.length > 0) {
-                // Document exists, update it
-                console.log(`Updating existing VCA document with ID: ${address}`);
+                // If we get here, document exists - update it
+                console.log(`[Storage] Updating existing VCA document with ID: ${address}`);
                 await databases.updateDocument(
                     DATABASE_ID,
                     VCA_COLLECTION,
                     address,
                     documentData
                 );
-                console.log(`Successfully updated VCA document: ${address}`);
-            } else {
-                // Document doesn't exist, create it
-                // Use generated ID instead of address as document ID to avoid potential issues
-                console.log(`Creating new VCA document for address: ${address}`);
-
-                // Include the address in the document data so we can reference it
-                const newDocumentData = {
-                    ...documentData,
-                    vcaAddress: address // Store the address as a field
-                };
-
-                // Use a unique ID instead of the address as document ID
-                const doc = await databases.createDocument(
-                    DATABASE_ID,
-                    VCA_COLLECTION,
-                    ID.unique(), // Generate a unique ID rather than using address
-                    newDocumentData
-                );
-
-                console.log(`Successfully created VCA document with ID: ${doc.$id}`);
+                console.log(`[Storage] Successfully updated VCA document: ${address}`);
+            } catch (err) {
+                // Document doesn't exist (404) or other error
+                if ((err as any).code === 404) {
+                    // Create new document with VCA address as the ID
+                    console.log(`[Storage] Creating new VCA document with ID: ${address}`);
+                    await databases.createDocument(
+                        DATABASE_ID,
+                        VCA_COLLECTION,
+                        address, // Use address as document ID
+                        documentData
+                    );
+                    console.log(`[Storage] Successfully created VCA document: ${address}`);
+                } else {
+                    // Some other error - rethrow
+                    throw err;
+                }
             }
         } catch (error) {
-            // Enhanced error handling
-            console.error(`Failed to save VCA with address ${address}:`, error);
-
-            // Extract more useful error information
-            let errorMessage = 'Unknown error';
-            if (error instanceof Error) {
-                errorMessage = error.message;
-                console.error(`Error name: ${error.name}`);
-                console.error(`Error message: ${error.message}`);
-                console.error(`Error stack: ${error.stack}`);
-            } else {
-                console.error('Non-Error object thrown:', error);
-            }
-
-            throw new Error(`Failed to save VCA: ${errorMessage}`);
+            console.error(`[Storage] Failed to save VCA with address ${address}:`, error);
+            throw new Error(`Failed to save VCA: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
+    /**
+     * Get a VCA by its address
+     * 
+     * @param address The VCA address
+     * @returns The VCA metadata or null if not found
+     */
     async getVCA(address: string): Promise<VCAMetadata | null> {
         try {
-            console.log(`Getting VCA with address: ${address}`);
+            console.log(`[Storage] Getting VCA with address: ${address}`);
 
-            // Query by vcaAddress field instead of document ID
-            const response = await databases.listDocuments(
+            // Get document directly by ID (address)
+            const doc = await databases.getDocument(
                 DATABASE_ID,
                 VCA_COLLECTION,
-                [Query.equal('vcaAddress', address)]
+                address
             );
 
-            if (response.documents.length === 0) {
-                console.log(`No VCA found with address: ${address}`);
-                return null;
-            }
-
-            const doc = response.documents[0];
-            console.log(`Found VCA document:`, doc);
+            console.log(`[Storage] Found VCA document:`, doc);
 
             // Convert Appwrite document to VCAMetadata
             const metadata: VCAMetadata = {
-                projectId: doc.projectId, // Fixed to use projectId consistently
+                projectId: doc.projectId,
                 owner: doc.owner,
                 signalScore: doc.signalScore || 0,
                 uniqueBackers: doc.uniqueBackers || 0,
@@ -125,45 +111,48 @@ export class AppwriteVCAStorage {
 
             return metadata;
         } catch (error) {
-            console.error(`Error getting VCA with address ${address}:`, error);
-
-            // Enhanced error handling
-            let errorMessage = 'Unknown error';
-            if (error instanceof Error) {
-                errorMessage = error.message;
-                console.error(`Error name: ${error.name}`);
-                console.error(`Error message: ${error.message}`);
-                console.error(`Error stack: ${error.stack}`);
+            // If document not found, return null
+            if ((error as any).code === 404) {
+                console.log(`[Storage] No VCA found with address: ${address}`);
+                return null;
             }
 
-            throw new Error(`Failed to get VCA: ${errorMessage}`);
+            console.error(`[Storage] Error getting VCA with address ${address}:`, error);
+            throw new Error(`Failed to get VCA: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
-    async getVCABySlug(slug: string): Promise<{ address: string, metadata: VCAMetadata } | null> {
+    /**
+     * Get a VCA by project ID
+     * 
+     * @param projectId The project ID
+     * @returns The VCA with address and metadata, or null if not found
+     */
+    async getVCAByProjectId(projectId: string): Promise<{ address: string, metadata: VCAMetadata } | null> {
         try {
-            console.log(`Getting VCA by slug: ${slug}`);
+            console.log(`[Storage] Getting VCA by projectId: ${projectId}`);
 
+            // Query by projectId field
             const response = await databases.listDocuments(
                 DATABASE_ID,
                 VCA_COLLECTION,
-                [Query.equal('projectId', slug)] // Changed from projectSlug to projectId
+                [Query.equal('projectId', projectId)]
             );
 
             if (response.documents.length === 0) {
-                console.log(`No VCA found for slug: ${slug}`);
+                console.log(`[Storage] No VCA found for projectId: ${projectId}`);
                 return null;
             }
 
             const doc = response.documents[0];
-            console.log(`Found VCA for slug ${slug}:`, doc);
+            console.log(`[Storage] Found VCA for projectId ${projectId}:`, doc);
 
-            // Get address from vcaAddress field
-            const address = doc.vcaAddress || doc.$id;
+            // Document ID should be the address
+            const address = doc.$id;
 
             // Convert Appwrite document to VCAMetadata
             const metadata: VCAMetadata = {
-                projectId: doc.projectId, // Fixed to use projectId consistently
+                projectId: doc.projectId,
                 owner: doc.owner,
                 signalScore: doc.signalScore || 0,
                 uniqueBackers: doc.uniqueBackers || 0,
@@ -178,24 +167,21 @@ export class AppwriteVCAStorage {
                 metadata
             };
         } catch (error) {
-            console.error(`Error getting VCA by slug ${slug}:`, error);
-
-            // Enhanced error handling
-            let errorMessage = 'Unknown error';
-            if (error instanceof Error) {
-                errorMessage = error.message;
-                console.error(`Error name: ${error.name}`);
-                console.error(`Error message: ${error.message}`);
-                console.error(`Error stack: ${error.stack}`);
-            }
-
-            throw new Error(`Failed to get VCA by slug: ${errorMessage}`);
+            console.error(`[Storage] Error getting VCA by projectId ${projectId}:`, error);
+            throw new Error(`Failed to get VCA by projectId: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
+    /**
+     * List all VCAs with pagination
+     * 
+     * @param limit Maximum number of VCAs to return
+     * @param offset Offset for pagination
+     * @returns Array of VCAs with addresses and metadata
+     */
     async listVCAs(limit = 50, offset = 0): Promise<{ address: string, metadata: VCAMetadata }[]> {
         try {
-            console.log(`Listing VCAs: limit=${limit}, offset=${offset}`);
+            console.log(`[Storage] Listing VCAs: limit=${limit}, offset=${offset}`);
 
             const response = await databases.listDocuments(
                 DATABASE_ID,
@@ -207,15 +193,15 @@ export class AppwriteVCAStorage {
                 ]
             );
 
-            console.log(`Found ${response.documents.length} VCAs`);
+            console.log(`[Storage] Found ${response.documents.length} VCAs`);
 
             return response.documents.map(doc => {
-                // Get address from vcaAddress field if available, otherwise use document ID
-                const address = doc.vcaAddress || doc.$id;
+                // Document ID should be the address
+                const address = doc.$id;
 
                 // Convert Appwrite document to VCAMetadata
                 const metadata: VCAMetadata = {
-                    projectId: doc.projectId, // Changed from projectSlug to projectId
+                    projectId: doc.projectId,
                     owner: doc.owner,
                     signalScore: doc.signalScore || 0,
                     uniqueBackers: doc.uniqueBackers || 0,
@@ -231,25 +217,22 @@ export class AppwriteVCAStorage {
                 };
             });
         } catch (error) {
-            console.error('Error listing VCAs:', error);
-
-            // Enhanced error handling
-            let errorMessage = 'Unknown error';
-            if (error instanceof Error) {
-                errorMessage = error.message;
-                console.error(`Error name: ${error.name}`);
-                console.error(`Error message: ${error.message}`);
-                console.error(`Error stack: ${error.stack}`);
-            }
-
-            throw new Error(`Failed to list VCAs: ${errorMessage}`);
+            console.error('[Storage] Error listing VCAs:', error);
+            throw new Error(`Failed to list VCAs: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
+    /**
+     * Add activity to a VCA
+     * 
+     * @param vcaAddress The VCA address
+     * @param activity The activity to add
+     */
     async addActivity(vcaAddress: string, activity: VCAActivity): Promise<void> {
         try {
-            console.log(`Adding activity to VCA ${vcaAddress}:`, activity);
+            console.log(`[Storage] Adding activity to VCA ${vcaAddress}:`, activity);
 
+            // Create activity document
             await databases.createDocument(
                 DATABASE_ID,
                 VCA_ACTIVITY_COLLECTION,
@@ -263,14 +246,14 @@ export class AppwriteVCAStorage {
                 }
             );
 
-            console.log(`Activity added to VCA ${vcaAddress}`);
+            console.log(`[Storage] Activity added to VCA ${vcaAddress}`);
 
-            // Update VCA metadata
+            // Update VCA metadata with new stats
             const vca = await this.getVCA(vcaAddress);
             if (vca) {
-                // Get updated counts
+                // Get all activities for this VCA
                 const activities = await this.getActivities(vcaAddress);
-                console.log(`Found ${activities.length} activities for VCA ${vcaAddress}`);
+                console.log(`[Storage] Found ${activities.length} activities for VCA ${vcaAddress}`);
 
                 // Count unique backers and activities by type
                 const backers = new Set<string>();
@@ -283,7 +266,7 @@ export class AppwriteVCAStorage {
                     if (act.type === 'share') shares++;
                 });
 
-                console.log(`VCA ${vcaAddress} stats: ${backers.size} backers, ${reviews} reviews, ${shares} shares`);
+                console.log(`[Storage] VCA ${vcaAddress} stats: ${backers.size} backers, ${reviews} reviews, ${shares} shares`);
 
                 // Update signal score
                 const updatedMetadata = VCAProtocol.updateSignalScore(
@@ -293,19 +276,26 @@ export class AppwriteVCAStorage {
                     reviews
                 );
 
-                console.log(`Updating VCA ${vcaAddress} metadata with new signal score: ${updatedMetadata.signalScore}`);
+                console.log(`[Storage] Updating VCA ${vcaAddress} metadata with new signal score: ${updatedMetadata.signalScore}`);
 
                 await this.saveVCA(vcaAddress, updatedMetadata);
             }
         } catch (error) {
-            console.error(`Error adding activity to VCA ${vcaAddress}:`, error);
-            throw new Error(`Failed to add activity:  'Unknown error'}`);
+            console.error(`[Storage] Error adding activity to VCA ${vcaAddress}:`, error);
+            throw new Error(`Failed to add activity: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
+    /**
+     * Get activities for a VCA
+     * 
+     * @param vcaAddress The VCA address
+     * @param limit Maximum number of activities to return
+     * @returns Array of activities
+     */
     async getActivities(vcaAddress: string, limit = 100): Promise<VCAActivity[]> {
         try {
-            console.log(`Getting activities for VCA ${vcaAddress}: limit=${limit}`);
+            console.log(`[Storage] Getting activities for VCA ${vcaAddress}: limit=${limit}`);
 
             const response = await databases.listDocuments(
                 DATABASE_ID,
@@ -317,7 +307,7 @@ export class AppwriteVCAStorage {
                 ]
             );
 
-            console.log(`Found ${response.documents.length} activities for VCA ${vcaAddress}`);
+            console.log(`[Storage] Found ${response.documents.length} activities for VCA ${vcaAddress}`);
 
             return response.documents.map(doc => ({
                 type: doc.type,
@@ -326,72 +316,88 @@ export class AppwriteVCAStorage {
                 details: doc.details || {}
             }));
         } catch (error) {
-            console.error(`Error getting activities for VCA ${vcaAddress}:`, error);
-            throw new Error(`Failed to get activities:  'Unknown error'}`);
+            console.error(`[Storage] Error getting activities for VCA ${vcaAddress}:`, error);
+            throw new Error(`Failed to get activities: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
+    /**
+     * Save a mapping between a VCA and a token contract
+     * 
+     * @param mapping The mapping to save
+     */
     async saveMapping(mapping: VCAMapping): Promise<void> {
         try {
-            console.log(`Saving mapping for VCA ${mapping.vca} to token ${mapping.tokenAddress}`);
+            console.log(`[Storage] Saving mapping for VCA ${mapping.vca} to token ${mapping.tokenAddress}`);
 
-            // Check if mapping already exists
-            let existing = null;
+            // Always create/update with VCA address as the document ID
             try {
-                existing = await this.getMapping(mapping.vca);
-            } catch (error) {
-                // Document doesn't exist, which is fine for a new mapping
-                console.log(`No mapping exists yet for VCA ${mapping.vca}`);
-            }
+                // Try to get the document first to determine if it exists
+                const existingDoc = await databases.getDocument(
+                    DATABASE_ID,
+                    VCA_MAPPING_COLLECTION,
+                    mapping.vca
+                );
 
-            if (existing) {
-                // Update existing mapping
-                console.log(`Updating existing mapping for VCA ${mapping.vca}`);
+                // Document exists, update it
+                console.log(`[Storage] Updating existing mapping for VCA ${mapping.vca}`);
                 await databases.updateDocument(
                     DATABASE_ID,
                     VCA_MAPPING_COLLECTION,
-                    mapping.vca, // Using VCA address as document ID
+                    mapping.vca,
                     {
                         vca: mapping.vca,
                         tokenAddress: mapping.tokenAddress,
                         timestamp: mapping.timestamp
                     }
                 );
-            } else {
-                // Create new mapping
-                console.log(`Creating new mapping for VCA ${mapping.vca}`);
-                await databases.createDocument(
-                    DATABASE_ID,
-                    VCA_MAPPING_COLLECTION,
-                    mapping.vca, // Using VCA address as document ID
-                    {
-                        vca: mapping.vca,
-                        tokenAddress: mapping.tokenAddress,
-                        timestamp: mapping.timestamp
-                    }
-                );
+            } catch (err) {
+                // Document doesn't exist (404) or other error
+                if ((err as any).code === 404) {
+                    // Create new document
+                    console.log(`[Storage] Creating new mapping for VCA ${mapping.vca}`);
+                    await databases.createDocument(
+                        DATABASE_ID,
+                        VCA_MAPPING_COLLECTION,
+                        mapping.vca, // Use VCA address as document ID
+                        {
+                            vca: mapping.vca,
+                            tokenAddress: mapping.tokenAddress,
+                            timestamp: mapping.timestamp
+                        }
+                    );
+                } else {
+                    // Some other error - rethrow
+                    throw err;
+                }
             }
 
-            console.log(`Mapping saved for VCA ${mapping.vca}`);
+            console.log(`[Storage] Mapping saved for VCA ${mapping.vca}`);
 
-            // Also update the VCA metadata
+            // Also update the VCA metadata with the token address
             const vca = await this.getVCA(mapping.vca);
             if (vca) {
-                console.log(`Updating VCA ${mapping.vca} metadata with token address: ${mapping.tokenAddress}`);
+                console.log(`[Storage] Updating VCA ${mapping.vca} metadata with token address: ${mapping.tokenAddress}`);
                 await this.saveVCA(mapping.vca, {
                     ...vca,
                     tokenAddress: mapping.tokenAddress
                 });
             }
         } catch (error) {
-            console.error(`Error saving mapping for VCA ${mapping.vca}:`, error);
-            throw new Error(`Failed to save mapping:  'Unknown error'}`);
+            console.error(`[Storage] Error saving mapping for VCA ${mapping.vca}:`, error);
+            throw new Error(`Failed to save mapping: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
+    /**
+     * Get a mapping by VCA address
+     * 
+     * @param vcaAddress The VCA address
+     * @returns The mapping or null if not found
+     */
     async getMapping(vcaAddress: string): Promise<VCAMapping | null> {
         try {
-            console.log(`Getting mapping for VCA ${vcaAddress}`);
+            console.log(`[Storage] Getting mapping for VCA ${vcaAddress}`);
 
             const response = await databases.getDocument(
                 DATABASE_ID,
@@ -399,7 +405,7 @@ export class AppwriteVCAStorage {
                 vcaAddress
             );
 
-            console.log(`Found mapping for VCA ${vcaAddress}:`, response);
+            console.log(`[Storage] Found mapping for VCA ${vcaAddress}:`, response);
 
             return {
                 vca: response.vca,
@@ -407,20 +413,26 @@ export class AppwriteVCAStorage {
                 timestamp: response.timestamp
             };
         } catch (error) {
-            console.error(`Error getting mapping for VCA ${vcaAddress}:`, error);
-
             // If document not found, return null
             if ((error as any).code === 404) {
+                console.log(`[Storage] No mapping found for VCA ${vcaAddress}`);
                 return null;
             }
 
-            throw new Error(`Failed to get mapping:  'Unknown error'}`);
+            console.error(`[Storage] Error getting mapping for VCA ${vcaAddress}:`, error);
+            throw new Error(`Failed to get mapping: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
+    /**
+     * Get a VCA by token address
+     * 
+     * @param tokenAddress The token address
+     * @returns The VCA with address and metadata, or null if not found
+     */
     async getVCAByTokenAddress(tokenAddress: string): Promise<{ address: string, metadata: VCAMetadata } | null> {
         try {
-            console.log(`Getting VCA by token address: ${tokenAddress}`);
+            console.log(`[Storage] Getting VCA by token address: ${tokenAddress}`);
 
             // First find the mapping
             const response = await databases.listDocuments(
@@ -430,31 +442,31 @@ export class AppwriteVCAStorage {
             );
 
             if (response.documents.length === 0) {
-                console.log(`No mapping found for token address: ${tokenAddress}`);
+                console.log(`[Storage] No mapping found for token address: ${tokenAddress}`);
                 return null;
             }
 
             const mapping = response.documents[0];
-            const vcaAddress = mapping.$id;
-            console.log(`Found mapping for token address ${tokenAddress}: VCA=${vcaAddress}`);
+            const vcaAddress = mapping.vca;
+            console.log(`[Storage] Found mapping for token address ${tokenAddress}: VCA=${vcaAddress}`);
 
             // Then get the VCA metadata
             const vca = await this.getVCA(vcaAddress);
 
             if (!vca) {
-                console.log(`VCA ${vcaAddress} not found even though mapping exists`);
+                console.log(`[Storage] VCA ${vcaAddress} not found even though mapping exists`);
                 return null;
             }
 
-            console.log(`Found VCA for token address ${tokenAddress}:`, vca);
+            console.log(`[Storage] Found VCA for token address ${tokenAddress}:`, vca);
 
             return {
                 address: vcaAddress,
                 metadata: vca
             };
         } catch (error) {
-            console.error(`Error getting VCA by token address ${tokenAddress}:`, error);
-            throw new Error(`Failed to get VCA by token address:  'Unknown error'}`);
+            console.error(`[Storage] Error getting VCA by token address ${tokenAddress}:`, error);
+            throw new Error(`Failed to get VCA by token address: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 }

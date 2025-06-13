@@ -1,4 +1,4 @@
-// src/components/vca/VCADisplay.tsx
+// src/components/vca/VCADisplay.tsx - UPDATED to use projectId
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -56,6 +56,7 @@ export default function VCADisplay({ projectId, compact = false }: VCADisplayPro
             setLoading(true);
             setError(null);
 
+            // Use getVCAByProjectId instead of getVCABySlug
             const vca = await VCAApi.getVCAByProjectId(projectId);
             setVcaData(vca);
 
