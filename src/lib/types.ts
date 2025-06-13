@@ -173,3 +173,26 @@ export interface ProjectCreator {
 export interface ProjectWithCreator extends Project {
     creator?: ProjectCreator;
 }
+export interface VCAMetadata {
+    projectSlug: string;        // Unique project identifier
+    owner: string;              // Owner address or Twitter handle
+    signalScore: number;        // Combined score from backings, shares, reviews
+    uniqueBackers: number;      // Number of unique backers
+    reviews: number;            // Number of reviews
+    followers: number;          // Number of followers
+    createdAt: string;          // Creation timestamp
+    tokenAddress?: string;      // Future token address mapping (optional)
+}
+
+export interface VCAActivity {
+    type: 'backing' | 'review' | 'share';
+    userId: string;             // User who performed the action
+    timestamp: string;          // When the action occurred
+    details?: any;              // Additional action-specific details
+}
+
+export interface VCAMapping {
+    vca: string;                // VCA address
+    tokenAddress: string;       // Real contract address
+    timestamp: string;          // When mapping was created
+}
