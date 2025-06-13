@@ -1,3 +1,4 @@
+// src/lib/types.ts - Updated with createdBy field
 // Updated User interface to match your Appwrite collection schema
 export interface User {
     $id: string;
@@ -68,9 +69,8 @@ export interface Project {
     teamMembers: string[]; // Array of team member strings
     chain: string; // Blockchain the project is built on
     platform: string; // Platform the project is launched on
-    createdBy: string; // User ID of the creator
+    createdBy: string; // ✅ User ID of the creator (User.$id)
     updatedAt: string; // Last updated timestamp
-    whitepaperUrl?: string; // URL to the project's whitepaper
     createdAt: string;
 }
 
@@ -103,6 +103,7 @@ export interface BelieverActivity {
     description: string;
     createdAt: string;
 }
+
 export interface ShareTrackingData {
     $id?: string;
     shareId: string;          // Unique identifier for this share
@@ -154,4 +155,21 @@ export interface PointsAwardResult {
     success: boolean;
     points?: number;
     error?: string;
+}
+
+// ✅ New interface for project creators
+export interface ProjectCreator {
+    $id: string;
+    username: string;
+    displayName: string;
+    profileImage: string;
+    isVerifiedKOL: boolean;
+    verified: boolean;
+    believerRank: string;
+    followerCount: number;
+}
+
+// ✅ Extended project interface with creator info
+export interface ProjectWithCreator extends Project {
+    creator?: ProjectCreator;
 }

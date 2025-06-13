@@ -1,4 +1,4 @@
-// src/components/projects/ProjectCard.tsx - Add import for ProjectSharers
+// src/components/projects/ProjectCard.tsx - Updated to show project creator
 'use client';
 
 import {
@@ -16,6 +16,7 @@ import {
     Snackbar,
     Alert,
     CircularProgress,
+    Tooltip,
 } from '@mui/material';
 import {
     ThumbUp,
@@ -30,6 +31,8 @@ import {
     People,
     AccountBalanceWallet,
     CheckCircle,
+    Person,
+    Verified,
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -38,11 +41,23 @@ import { useUser } from '@/hooks/useUser';
 import { ReviewService } from '@/lib/reviewService';
 import AuthDialog from '@/components/auth/AuthDialog';
 import TrackableShareButton from '../sharing/TrackableShareButton';
-import ProjectSharers from './ProjectSharers'; // NEW IMPORT
+import ProjectSharers from './ProjectSharers';
 import { Project } from '@/lib/types';
-import ManualShareTest from '../sharing/ManualSHareTest';
+import { databases, DATABASE_ID, USERS_COLLECTION_ID } from '@/lib/appwrite';
 
-
+// Updated interface to include creator info
+interface ProjectWithCreator extends Project {
+    creator?: {
+        $id: string;
+        username: string;
+        displayName: string;
+        profileImage: string;
+        isVerifiedKOL: boolean;
+        verified: boolean;
+        believerRank: string;
+        followerCount: number;
+    };
+}
 
 interface ProjectCardProps {
     project: Project;
@@ -67,6 +82,10 @@ export default function ProjectCard({
     const { awardUpvotePoints, canPerformAction } = useBelieverActions();
     const { user, authenticated } = useUser();
 
+    // Creator state
+    const [creator, setCreator] = useState<ProjectWithCreator['creator'] | null>(null);
+    const [loadingCreator, setLoadingCreator] = useState(false);
+
     // Review status state
     const [hasReviewed, setHasReviewed] = useState<boolean | null>(null);
     const [checkingReview, setCheckingReview] = useState(false);
@@ -81,6 +100,40 @@ export default function ProjectCard({
         message: '',
         severity: 'success'
     });
+
+    // Fetch creator information
+    useEffect(() => {
+        const fetchCreator = async () => {
+            if (!project.createdBy || project.createdBy === 'user-id-placeholder') return;
+
+            setLoadingCreator(true);
+            try {
+                const creatorResponse = await databases.getDocument(
+                    DATABASE_ID,
+                    USERS_COLLECTION_ID,
+                    project.createdBy
+                );
+
+                setCreator({
+                    $id: creatorResponse.$id,
+                    username: creatorResponse.username || 'anonymous',
+                    displayName: creatorResponse.displayName || 'Anonymous Creator',
+                    profileImage: creatorResponse.profileImage || '',
+                    isVerifiedKOL: creatorResponse.isVerifiedKOL || false,
+                    verified: creatorResponse.verified || false,
+                    believerRank: creatorResponse.believerRank || 'Believer',
+                    followerCount: creatorResponse.followerCount || 0,
+                });
+            } catch (error) {
+                console.error('Failed to fetch creator:', error);
+                setCreator(null);
+            } finally {
+                setLoadingCreator(false);
+            }
+        };
+
+        fetchCreator();
+    }, [project.createdBy]);
 
     // Check if user has reviewed this project
     useEffect(() => {
@@ -296,11 +349,78 @@ export default function ProjectCard({
         );
     };
 
+    const renderCreatorInfo = () => {
+        if (loadingCreator) {
+            return (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <CircularProgress size={16} sx={{ color: '#666' }} />
+                    <Typography variant="caption" sx={{ color: '#888' }}>
+                        Loading creator...
+                    </Typography>
+                </Box>
+            );
+        }
+
+        if (!creator) {
+            return (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <Person sx={{ color: '#666', fontSize: '1rem' }} />
+                    <Typography variant="caption" sx={{ color: '#888' }}>
+                        Creator: Unknown
+                    </Typography>
+                </Box>
+            );
+        }
+
+        return (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <Tooltip
+                    title={`@${creator.username} • ${creator.followerCount.toLocaleString()} followers • ${creator.believerRank}`}
+                    arrow
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+                        <Avatar
+                            src={creator.profileImage || undefined}
+                            sx={{
+                                width: 20,
+                                height: 20,
+                                fontSize: '0.7rem',
+                                backgroundColor: '#00ff88',
+                                color: '#000',
+                            }}
+                        >
+                            {creator.displayName.charAt(0)}
+                        </Avatar>
+                        <Typography variant="caption" sx={{ color: '#00ff88', fontWeight: 'bold' }}>
+                            @{creator.username}
+                        </Typography>
+                        {creator.verified && (
+                            <Verified sx={{ color: '#00ff88', fontSize: '0.8rem' }} />
+                        )}
+                        {creator.isVerifiedKOL && (
+                            <Chip
+                                label="KOL"
+                                size="small"
+                                sx={{
+                                    fontSize: '0.6rem',
+                                    height: 16,
+                                    backgroundColor: alpha('#ff6b6b', 0.2),
+                                    color: '#ff6b6b',
+                                    '& .MuiChip-label': { px: 0.5 }
+                                }}
+                            />
+                        )}
+                    </Box>
+                </Tooltip>
+            </Box>
+        );
+    };
+
     return (
         <>
             <Card
                 sx={{
-                    height: '540px', // Increased height for sharers section
+                    height: '580px', // Slightly increased height for creator info
                     display: 'flex',
                     flexDirection: 'column',
                     background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
@@ -424,6 +544,9 @@ export default function ProjectCard({
                             </IconButton>
                         </Stack>
                     </Box>
+
+                    {/* Creator Info */}
+                    {renderCreatorInfo()}
 
                     {/* Status and Category */}
                     <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
@@ -587,7 +710,7 @@ export default function ProjectCard({
                         </Stack>
                     </Box>
 
-                    {/* NEW: Sharers and Social Links Section */}
+                    {/* Sharers and Social Links Section */}
                     <Box sx={{ mt: 'auto' }}>
                         <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="center">
                             <Stack direction="row" spacing={1}>
@@ -634,7 +757,7 @@ export default function ProjectCard({
                                     </IconButton>
                                 )}
                             </Stack>
-                            {/* NEW: Compact sharers display */}
+                            {/* Compact sharers display */}
                             <ProjectSharers projectId={project.$id} compact={true} limit={3} />
                         </Stack>
                     </Box>
