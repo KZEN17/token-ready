@@ -1,10 +1,18 @@
-// src/app/admin/page.tsx - Simple admin page without authentication
+// src/app/admin/page.tsx - Updated with VCA Testing
 'use client';
 
 import ShareVerificationAdmin from '@/components/admin/ShareVerificationAdmin';
-import { Box, Typography, Container } from '@mui/material';
+import VCATestingTool from '@/components/vca/VCATestingTool';
+import { Box, Typography, Container, Tabs, Tab } from '@mui/material';
+import { useState } from 'react';
 
 export default function AdminPage() {
+    const [activeTab, setActiveTab] = useState(0);
+
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        setActiveTab(newValue);
+    };
+
     return (
         <Box sx={{
             minHeight: '100vh',
@@ -28,7 +36,32 @@ export default function AdminPage() {
                     🛠️ TokenReady Admin Panel
                 </Typography>
 
-                <ShareVerificationAdmin />
+                {/* Add Tabs for different admin sections */}
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
+                    <Tabs
+                        value={activeTab}
+                        onChange={handleTabChange}
+                        sx={{
+                            '& .MuiTab-root': {
+                                color: '#888',
+                                fontWeight: 'bold',
+                                '&.Mui-selected': {
+                                    color: '#00ff88',
+                                }
+                            },
+                            '& .MuiTabs-indicator': {
+                                backgroundColor: '#00ff88',
+                            }
+                        }}
+                    >
+                        <Tab label="Share Verification" />
+                        <Tab label="VCA Testing" />
+                    </Tabs>
+                </Box>
+
+                {/* Tab Content */}
+                {activeTab === 0 && <ShareVerificationAdmin />}
+                {activeTab === 1 && <VCATestingTool />}
             </Container>
         </Box>
     );
