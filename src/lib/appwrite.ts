@@ -15,8 +15,8 @@ export const PROJECTS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_
 export const REVIEWS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_REVIEWS_COLLECTION_ID || '';
 export const USERS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || '';
 export const STORAGE_BUCKET_ID = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID || 'project-logos';
-// Missing collections in your Appwrite setup:
-const VCA_COLLECTION = process.env.NEXT_PUBLIC_APPWRITE_VCA_COLLECTION_ID || 'vcas';
-const VCA_ACTIVITY_COLLECTION = process.env.NEXT_PUBLIC_APPWRITE_VCA_ACTIVITY_COLLECTION_ID || 'vca_activities';
-const VCA_MAPPING_COLLECTION = process.env.NEXT_PUBLIC_APPWRITE_VCA_MAPPING_COLLECTION_ID || 'vca_mappings';
+
+export const VCA_COLLECTION = process.env.NEXT_PUBLIC_APPWRITE_VCA_COLLECTION_ID || 'vcas';
+export const VCA_ACTIVITY_COLLECTION = process.env.NEXT_PUBLIC_APPWRITE_VCA_ACTIVITY_COLLECTION_ID || 'vca_activities';
+export const VCA_MAPPING_COLLECTION = process.env.NEXT_PUBLIC_APPWRITE_VCA_MAPPING_COLLECTION_ID || 'vca_mappings';
 export default client;

@@ -2,7 +2,7 @@
 'use client';
 
 import ShareVerificationAdmin from '@/components/admin/ShareVerificationAdmin';
-import VCATestingTool from '@/components/vca/VCATestingTool';
+import SimpleVCATest from '@/components/vca/SimpleTest';
 import { Box, Typography, Container, Tabs, Tab } from '@mui/material';
 import { useState } from 'react';
 
@@ -61,7 +61,7 @@ export default function AdminPage() {
 
                 {/* Tab Content */}
                 {activeTab === 0 && <ShareVerificationAdmin />}
-                {activeTab === 1 && <VCATestingTool />}
+                {activeTab === 1 && <SimpleVCATest />}
             </Container>
         </Box>
     );
