@@ -49,14 +49,30 @@ export async function GET(request: NextRequest) {
                         { status: 400 }
                     );
                 }
-                const vcaBySlug = await VCAApi.getVCABySlug(slug);
-                if (!vcaBySlug) {
+
+                console.log(`API Route: Getting VCA by slug=${slug}`);
+
+                try {
+                    const vcaBySlug = await VCAApi.getVCABySlug(slug);
+
+                    // IMPORTANT: This is the key fix - handle null result properly
+                    if (!vcaBySlug) {
+                        console.log(`API Route: No VCA found for slug=${slug}`);
+                        return NextResponse.json(
+                            { error: 'VCA not found for this slug' },
+                            { status: 404 }
+                        );
+                    }
+
+                    console.log(`API Route: Found VCA for slug=${slug}:`, vcaBySlug);
+                    return NextResponse.json(vcaBySlug);
+                } catch (error) {
+                    console.error(`API Route: Error getting VCA by slug=${slug}:`, error);
                     return NextResponse.json(
-                        { error: 'VCA not found for this slug' },
-                        { status: 404 }
+                        { error: 'Failed to get VCA by slug' },
+                        { status: 500 }
                     );
                 }
-                return NextResponse.json(vcaBySlug);
 
             case 'activities':
                 if (!address) {

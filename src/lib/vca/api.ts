@@ -90,12 +90,32 @@ export class VCAApi {
         console.log(`VCAApi.getVCABySlug: Getting VCA for slug=${slug}`);
 
         try {
-            const result = await vcaStorage.getVCABySlug(slug);
-            console.log(`Result for slug=${slug}:`, result);
+            // Important: Normalize the slug to ensure consistency
+            const normalizedSlug = slug.trim().toLowerCase();
+            console.log(`Normalized slug: ${normalizedSlug}`);
+
+            const result = await vcaStorage.getVCABySlug(normalizedSlug);
+            console.log(`Result for slug=${normalizedSlug}:`, result);
+
+            if (!result) {
+                console.log(`No VCA found for slug=${normalizedSlug}`);
+                return null;
+            }
+
             return result;
         } catch (error) {
             console.error(`Failed to get VCA for slug=${slug}:`, error);
-            throw new Error(`Failed to get VCA by slug:  'Unknown error'}`);
+
+            // Enhanced error handling
+            let errorMessage = 'Unknown error';
+            if (error instanceof Error) {
+                errorMessage = error.message;
+                console.error(`Error name: ${error.name}`);
+                console.error(`Error message: ${error.message}`);
+                console.error(`Error stack: ${error.stack}`);
+            }
+
+            throw new Error(`Failed to get VCA by slug: ${errorMessage}`);
         }
     }
 
