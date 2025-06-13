@@ -1,4 +1,4 @@
-// src/components/projects/ProjectHeader.tsx - Enhanced to show project creator
+// src/components/projects/ProjectHeader.tsx 
 'use client';
 
 import {
