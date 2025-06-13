@@ -133,3 +133,9 @@ export const filterProjects = (
         return matchesSearch && matchesCategory && matchesStatus;
     });
 };
+export const toTitleCase = (str: string) =>
+    str
+        .replace(/[-_]/g, ' ')                // replace dashes/underscores with spaces
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');

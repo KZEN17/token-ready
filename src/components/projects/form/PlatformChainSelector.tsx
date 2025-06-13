@@ -1,6 +1,7 @@
 // src/components/projects/form/LaunchPlatformSection.tsx
 'use client';
 
+import { chains, platforms } from '@/lib/constants';
 import {
     Box,
     Typography,
@@ -22,62 +23,7 @@ interface LaunchPlatformSectionProps {
     chainError?: string;
 }
 
-const platforms = [
-    {
-        id: 'virtuals',
-        name: 'Virtuals.io',
-        description: 'AI Agents as co-owned and tokenized assets',
-        icon: '🤖',
-        color: '#8b5cf6'
-    },
-    {
-        id: 'pumpfun',
-        name: 'Pump.fun',
-        description: 'Launch instantly tradable coins without liquidity',
-        icon: '🚀',
-        color: '#00ff88'
-    },
-    {
-        id: 'believerapp',
-        name: 'BelieverApp',
-        description: 'Community-driven project launches',
-        icon: '💎',
-        color: '#ff6b6b'
-    }
-];
 
-const chains = [
-    {
-        id: 'solana',
-        name: 'Solana',
-        symbol: 'SOL',
-        color: '#dc1fff',
-        // Using inline SVG for Solana logo
-        logo: (
-            <svg width="24" height="24" viewBox="0 0 397.7 311.7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <linearGradient id="solana-gradient" x1="360.8791" y1="351.4553" x2="141.213" y2="-69.2936" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#00D18C" />
-                    <stop offset="100%" stopColor="#4CDBF7" />
-                </linearGradient>
-                <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 237.9z" fill="url(#solana-gradient)" />
-                <path d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1L333.1 73.8c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z" fill="url(#solana-gradient)" />
-                <path d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z" fill="url(#solana-gradient)" />
-            </svg>
-        )
-    },
-    {
-        id: 'base',
-        name: 'Base',
-        symbol: 'BASE',
-        color: '#0052ff',
-        // Using inline SVG for Base logo
-        logo: (
-            <svg width="24" height="24" viewBox="0 0 111 111" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M54.921 110.034C85.359 110.034 110.034 85.402 110.034 55.017C110.034 24.6319 85.359 0 54.921 0C26.0432 0 2.35281 21.9398 0.275391 49.9554H70.8467V60.0788H0.275391C2.35281 88.0944 26.0432 110.034 54.921 110.034Z" fill="#0052ff" />
-            </svg>
-        )
-    }
-];
 
 export default function LaunchPlatformSection({
     selectedPlatform,
@@ -243,7 +189,11 @@ export default function LaunchPlatformSection({
                                                         backgroundColor: alpha(chain.color, 0.1),
                                                         border: `2px solid ${alpha(chain.color, 0.3)}`
                                                     }}>
-                                                        {chain.logo}
+                                                        <img
+                                                            src={chain.logo}
+                                                            alt={`${chain.name} logo`}
+                                                            style={{ width: '100%', height: '100%', objectFit: 'contain', color: 'white' }}
+                                                        />
                                                     </Box>
                                                     <Box>
                                                         <Typography variant="h6" sx={{

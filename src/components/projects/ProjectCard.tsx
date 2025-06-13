@@ -44,6 +44,7 @@ import TrackableShareButton from '../sharing/TrackableShareButton';
 import ProjectSharers from './ProjectSharers';
 import { Project } from '@/lib/types';
 import { databases, DATABASE_ID, USERS_COLLECTION_ID } from '@/lib/appwrite';
+import { toTitleCase } from '@/utils/helpers'; // Assuming you have a utility function for title casing
 
 // Updated interface to include creator info
 interface ProjectWithCreator extends Project {
@@ -384,45 +385,27 @@ export default function ProjectCard({
         }
 
         return (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Tooltip
-                    title={`@${creator.username} • ${creator.followerCount.toLocaleString()} followers • ${creator.believerRank}`}
-                    arrow
-                >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
-                        <Avatar
-                            src={creator.profileImage || undefined}
-                            sx={{
-                                width: 20,
-                                height: 20,
-                                fontSize: '0.7rem',
-                                backgroundColor: '#00ff88',
-                                color: '#000',
-                            }}
-                        >
-                            {creator.displayName.charAt(0)}
-                        </Avatar>
-                        <Typography variant="caption" sx={{ color: '#00ff88', fontWeight: 'bold' }}>
-                            @{creator.username}
-                        </Typography>
-                        {creator.verified && (
-                            <Verified sx={{ color: '#00ff88', fontSize: '0.75rem' }} />
-                        )}
-                        {creator.isVerifiedKOL && (
-                            <Chip
-                                label="KOL"
-                                size="small"
-                                sx={{
-                                    fontSize: '0.55rem',
-                                    height: 14,
-                                    backgroundColor: alpha('#ff6b6b', 0.2),
-                                    color: '#ff6b6b',
-                                    '& .MuiChip-label': { px: 0.5 }
-                                }}
-                            />
-                        )}
-                    </Box>
-                </Tooltip>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', my: 2 }}>
+                <Chip
+                    avatar={<Avatar src={creator.profileImage || undefined} />}
+                    label={`Creator: @${creator.username}`}
+                    variant="outlined"
+                    sx={{ color: '#00ff88', borderColor: '#00ff88' }}
+                />
+
+                <Chip
+                    avatar={<Avatar src={`/${project.platform}.svg`} />}
+                    label={toTitleCase(project.platform)}
+                    variant="outlined"
+                    sx={{ color: '#00ff88', borderColor: '#00ff88' }}
+                />
+
+                <Chip
+                    avatar={<Avatar src={`/${project.chain}.svg`} />}
+                    label={toTitleCase(project.chain)}
+                    variant="outlined"
+                    sx={{ color: '#00ff88', borderColor: '#00ff88' }}
+                />
             </Box>
         );
     };

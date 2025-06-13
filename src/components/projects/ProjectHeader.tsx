@@ -28,27 +28,10 @@ import {
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { databases, DATABASE_ID, USERS_COLLECTION_ID } from '@/lib/appwrite';
+import { Project } from '@/lib/types';
+import { toTitleCase } from '@/utils/helpers';
 
-interface Project {
-    $id: string;
-    name: string;
-    ticker: string;
-    pitch: string;
-    description: string;
-    website: string;
-    github?: string;
-    twitter: string;
-    category: string;
-    status: string;
-    logoUrl?: string;
-    totalStaked: number;
-    believers: number;
-    reviews: number;
-    bobScore: number;
-    upvotes: string[];
-    createdAt: string;
-    createdBy?: string; // This is the user ID of the creator
-}
+
 
 interface Creator {
     $id: string;
@@ -151,46 +134,33 @@ export default function ProjectHeader({
         }
 
         return (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                <Tooltip
-                    title={`@${creator.username} • ${creator.followerCount.toLocaleString()} followers • ${creator.believerRank}`}
-                    arrow
-                >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
-                        <Avatar
-                            src={creator.profileImage || undefined}
-                            sx={{
-                                width: 24,
-                                height: 24,
-                                fontSize: '0.75rem',
-                                backgroundColor: '#00ff88',
-                                color: '#000',
-                            }}
-                        >
-                            {creator.displayName.charAt(0)}
-                        </Avatar>
-                        <Typography variant="body2" sx={{ color: '#00ff88', fontWeight: 'bold' }}>
-                            Created by @{creator.username}
-                        </Typography>
-                        {creator.verified && (
-                            <Verified sx={{ color: '#00ff88', fontSize: '0.8rem' }} />
-                        )}
-                        {creator.isVerifiedKOL && (
-                            <Chip
-                                label="KOL"
-                                size="small"
-                                sx={{
-                                    fontSize: '0.6rem',
-                                    height: 16,
-                                    backgroundColor: alpha('#ff6b6b', 0.2),
-                                    color: '#ff6b6b',
-                                    '& .MuiChip-label': { px: 0.5 }
-                                }}
-                            />
-                        )}
-                    </Box>
-                </Tooltip>
+
+
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 2 }}>
+                <Chip
+                    avatar={<Avatar src={creator.profileImage || undefined} />}
+                    label={`Creator: @${creator.username}`}
+                    variant="outlined"
+                    sx={{ color: '#00ff88', borderColor: '#00ff88' }}
+                />
+
+                <Chip
+                    avatar={<Avatar src={`/${project.platform}.svg`} />}
+                    label={`Platform: ${toTitleCase(project.platform)}`}
+                    variant="outlined"
+                    sx={{ color: '#00ff88', borderColor: '#00ff88' }}
+                />
+
+                <Chip
+                    avatar={<Avatar src={`/${project.chain}.svg`} />}
+                    label={`Chain: ${toTitleCase(project.chain)}`}
+                    variant="outlined"
+                    sx={{ color: '#00ff88', borderColor: '#00ff88' }}
+                />
+
             </Box>
+
+
         );
     };
 
