@@ -3,7 +3,6 @@
 
 import ProjectReviewAdmin from '@/components/admin/ProjectReviewAdmin';
 import ShareVerificationAdmin from '@/components/admin/ShareVerificationAdmin';
-import SimpleVCATest from '@/components/vca/SimpleTest';
 import { Box, Typography, Container, Tabs, Tab } from '@mui/material';
 import { useState } from 'react';
 

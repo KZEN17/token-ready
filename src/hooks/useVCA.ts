@@ -7,7 +7,7 @@ import { VCAMetadata, VCAActivity, VCAMapping } from '@/lib/types';
 import { useUser } from './useUser';
 
 interface UseVCAOptions {
-    projectSlug: string;
+    projectId: string;
     autoFetch?: boolean;
 }
 
@@ -25,7 +25,7 @@ interface UseVCAResult {
 /**
  * Custom hook for working with VCAs in components
  */
-export function useVCA({ projectSlug, autoFetch = true }: UseVCAOptions): UseVCAResult {
+export function useVCA({ projectId, autoFetch = true }: UseVCAOptions): UseVCAResult {
     const { user, authenticated } = useUser();
 
     const [vcaData, setVcaData] = useState<{ address: string; metadata: VCAMetadata } | null>(null);
@@ -35,13 +35,13 @@ export function useVCA({ projectSlug, autoFetch = true }: UseVCAOptions): UseVCA
 
     // Load VCA data by project slug
     const loadVCA = useCallback(async () => {
-        if (!projectSlug) return;
+        if (!projectId) return;
 
         try {
             setLoading(true);
             setError(null);
 
-            const data = await VCAApi.getVCABySlug(projectSlug);
+            const data = await VCAApi.getVCAByProjectId(projectId);
             setVcaData(data);
 
             if (data) {
@@ -55,7 +55,7 @@ export function useVCA({ projectSlug, autoFetch = true }: UseVCAOptions): UseVCA
             setError('Failed to load VCA data');
             setLoading(false);
         }
-    }, [projectSlug]);
+    }, [projectId]);
 
     // Create a new VCA
     const createVCA = async () => {
@@ -68,7 +68,7 @@ export function useVCA({ projectSlug, autoFetch = true }: UseVCAOptions): UseVCA
             setError(null);
 
             const owner = user.username || user.$id;
-            const result = await VCAApi.createVCA(projectSlug, owner);
+            const result = await VCAApi.createVCA(projectId, owner);
 
             setVcaData(result);
             setActivities([]);
@@ -153,7 +153,7 @@ export function useVCA({ projectSlug, autoFetch = true }: UseVCAOptions): UseVCA
         if (autoFetch) {
             loadVCA();
         }
-    }, [autoFetch, loadVCA, projectSlug]);
+    }, [autoFetch, loadVCA, projectId]);
 
     return {
         vcaData,
