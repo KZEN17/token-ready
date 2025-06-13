@@ -1,4 +1,4 @@
-// src/components/projects/ProjectForm.tsx
+// src/components/projects/ProjectForm.tsx - Updated with Launch Platform section
 'use client';
 
 import {
@@ -20,6 +20,7 @@ import FormTextField from './form/FormTextField';
 import FormSelect from './form/FormSelect';
 import ProjectChecklist from './form/ProjectChecklist';
 import SubmitButton from './form/SubmitButton';
+import LaunchPlatformSection from './form/PlatformChainSelector';
 
 interface ProjectFormData {
     name: string;
@@ -33,6 +34,7 @@ interface ProjectFormData {
     requestTwitterSpace: string;
     whitepaper: string;
     category: string;
+    // NEW FIELDS - not in form data since they're handled separately
 }
 
 // Simplified logo validation function
@@ -93,6 +95,12 @@ export default function ProjectForm() {
     const [descriptionLength, setDescriptionLength] = useState(0);
     const [teamMembers, setTeamMembers] = useState<string[]>(['']);
 
+    // NEW STATE for launch platforms and blockchains
+    const [selectedPlatform, setSelectedPlatform] = useState<string>();
+    const [selectedChain, setSelectedChain] = useState<string>();
+    const [platformError, setPlatformError] = useState<string>('');
+    const [chainError, setChainError] = useState<string>('');
+
     const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<ProjectFormData>();
 
     const pitchValue = watch('pitch', '');
@@ -126,6 +134,25 @@ export default function ProjectForm() {
         'Twitter Space + launch date confirmed',
         'Dexscreener, icon, site, and contract filled',
     ];
+
+    // NEW HANDLERS for launch platform selection
+    const handlePlatformChange = (platform: string, checked: boolean) => {
+        if (checked) {
+            setSelectedPlatform(platform);
+        } else {
+            setSelectedPlatform(undefined);
+        }
+        setPlatformError(''); // Clear error when user makes selection
+    };
+
+    const handleChainChange = (chain: string, checked: boolean) => {
+        if (checked) {
+            setSelectedChain(chain);
+        } else {
+            setSelectedChain(undefined);
+        }
+        setChainError(''); // Clear error when user makes selection
+    };
 
     const handleLogoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -203,8 +230,23 @@ export default function ProjectForm() {
     const onSubmit = async (data: ProjectFormData) => {
         setLoading(true);
         setError(null);
+        setPlatformError('');
+        setChainError('');
 
         try {
+            // Validate new required fields
+            if (selectedPlatform) {
+                setPlatformError('Please select at least one launch platform');
+                setLoading(false);
+                return;
+            }
+
+            if (selectedChain) {
+                setChainError('Please select at least one blockchain network');
+                setLoading(false);
+                return;
+            }
+
             if (data.pitch && data.pitch.length > 2000) {
                 throw new Error('Pitch must be 2000 characters or less');
             }
@@ -237,6 +279,12 @@ export default function ProjectForm() {
                 whitepaper: data.whitepaper,
                 requestTwitterSpace: data.requestTwitterSpace === 'true',
                 logoUrl: logoUrl,
+
+                // NEW FIELDS for launch platforms and chains
+                platform: selectedPlatform, // Array of selected platforms
+                chain: selectedChain, // Array of selected chains
+
+                // Existing fields
                 totalStaked: 0,
                 believers: 0,
                 reviews: 0,
@@ -263,6 +311,8 @@ export default function ProjectForm() {
             setTeamMembers(['']);
             setPitchLength(0);
             setDescriptionLength(0);
+            setSelectedPlatform(''); // Reset platform selection
+            setSelectedChain(''); // Reset chain selection
 
         } catch (error: any) {
             console.error('Error submitting project:', error);
@@ -309,6 +359,8 @@ export default function ProjectForm() {
                             setSubmitted(false);
                             setError(null);
                             setTeamMembers(['']);
+                            setSelectedPlatform('');
+                            setSelectedChain('');
                         }}
                     />
                 </Paper>
@@ -385,6 +437,20 @@ export default function ProjectForm() {
                                 error={errors.category?.message}
                                 onChange={(value) => setValue('category', value)}
                             />
+                        </Grid>
+
+                        {/* NEW: Launch Platform & Blockchain Selection */}
+                        <Grid size={{ xs: 12 }}>
+                            <Grid size={{ xs: 12 }}>
+                                <LaunchPlatformSection
+                                    selectedPlatform={selectedPlatform!}
+                                    selectedChain={selectedChain!}
+                                    onPlatformChange={(platform) => handlePlatformChange(platform, !selectedPlatform)}
+                                    onChainChange={(chain) => handleChainChange(chain, !selectedChain)}
+                                    platformError={platformError}
+                                    chainError={chainError}
+                                />
+                            </Grid>
                         </Grid>
 
                         {/* Social Links Row */}
@@ -532,3 +598,4 @@ export default function ProjectForm() {
         </Container>
     );
 }
+

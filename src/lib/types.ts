@@ -66,6 +66,11 @@ export interface Project {
     simulatedInvestment: number;
     upvotes: string[]; // Array of user IDs who upvoted
     teamMembers: string[]; // Array of team member strings
+    chain: string; // Blockchain the project is built on
+    platform: string; // Platform the project is launched on
+    createdBy: string; // User ID of the creator
+    updatedAt: string; // Last updated timestamp
+    whitepaperUrl?: string; // URL to the project's whitepaper
     createdAt: string;
 }
 
