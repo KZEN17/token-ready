@@ -20,29 +20,8 @@ import ProjectSharers from '@/components/projects/ProjectSharers'; // NEW
 import { ReviewService } from '@/lib/reviewService';
 import { useUser } from '@/hooks/useUser';
 import { useShareTracking } from '@/hooks/useShareTracking'; // NEW
+import { Project } from '@/lib/types';
 
-interface Project {
-    $id: string;
-    name: string;
-    ticker: string;
-    pitch: string;
-    description: string;
-    website: string;
-    github?: string;
-    twitter: string;
-    category: string;
-    status: string;
-    launchDate?: string;
-    logoUrl?: string;
-    totalStaked: number;
-    believers: number;
-    reviews: number;
-    bobScore: number;
-    estimatedReturn: number;
-    upvotes: string[];
-    teamMembers: string[];
-    createdAt: string;
-}
 
 interface ReviewStats {
     totalReviews: number;

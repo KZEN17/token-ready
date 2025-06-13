@@ -31,7 +31,13 @@ export default function ProjectInfo({ project }: ProjectInfoProps) {
                 <Typography variant="h5" sx={{ color: '#00ff88', mb: 3, fontWeight: 'bold' }}>
                     About {project.name}
                 </Typography>
-                <Typography variant="body1" sx={{ mb: 4, lineHeight: 1.7, color: '#b0b0b0' }}>
+                <Typography variant="body1" sx={{
+                    mb: 4,
+                    lineHeight: 1.7,
+                    color: '#b0b0b0',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                }}>
                     {project.description}
                 </Typography>
 
