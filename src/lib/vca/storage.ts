@@ -13,7 +13,7 @@ const VCA_MAPPING_COLLECTION = process.env.NEXT_PUBLIC_APPWRITE_VCA_MAPPING_COLL
  * Appwrite implementation of VCA storage
  */
 export class AppwriteVCAStorage {
-    // Replace the saveVCA method in your src/lib/vca/storage.ts file with this version
+    // Fixed version with consistent field naming
     async saveVCA(address: string, metadata: VCAMetadata): Promise<void> {
         try {
             console.log(`Attempting to save VCA with address: ${address}`, metadata);
@@ -21,7 +21,7 @@ export class AppwriteVCAStorage {
             // Convert metadata to a format suitable for Appwrite
             // This ensures only valid fields are included
             const documentData = {
-                projectSlug: metadata.projectSlug,
+                projectId: metadata.projectId, // Changed from projectSlug to projectId for consistency
                 owner: metadata.owner,
                 signalScore: metadata.signalScore || 0,
                 uniqueBackers: metadata.uniqueBackers || 0,
@@ -113,7 +113,7 @@ export class AppwriteVCAStorage {
 
             // Convert Appwrite document to VCAMetadata
             const metadata: VCAMetadata = {
-                projectSlug: doc.projectSlug,
+                projectId: doc.projectId, // Fixed to use projectId consistently
                 owner: doc.owner,
                 signalScore: doc.signalScore || 0,
                 uniqueBackers: doc.uniqueBackers || 0,
@@ -147,7 +147,7 @@ export class AppwriteVCAStorage {
             const response = await databases.listDocuments(
                 DATABASE_ID,
                 VCA_COLLECTION,
-                [Query.equal('projectSlug', slug)]
+                [Query.equal('projectId', slug)] // Changed from projectSlug to projectId
             );
 
             if (response.documents.length === 0) {
@@ -163,7 +163,7 @@ export class AppwriteVCAStorage {
 
             // Convert Appwrite document to VCAMetadata
             const metadata: VCAMetadata = {
-                projectSlug: doc.projectSlug,
+                projectId: doc.projectId, // Fixed to use projectId consistently
                 owner: doc.owner,
                 signalScore: doc.signalScore || 0,
                 uniqueBackers: doc.uniqueBackers || 0,
@@ -215,7 +215,7 @@ export class AppwriteVCAStorage {
 
                 // Convert Appwrite document to VCAMetadata
                 const metadata: VCAMetadata = {
-                    projectSlug: doc.projectSlug,
+                    projectId: doc.projectId, // Changed from projectSlug to projectId
                     owner: doc.owner,
                     signalScore: doc.signalScore || 0,
                     uniqueBackers: doc.uniqueBackers || 0,
