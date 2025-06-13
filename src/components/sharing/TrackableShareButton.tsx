@@ -1,4 +1,4 @@
-// src/components/sharing/TrackableShareButton.tsx - FIXED for Production & Reshare Prevention
+// src/components/sharing/TrackableShareButton.tsx - FIXED SIZE VERSION
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -81,7 +81,7 @@ export default function TrackableShareButton({
         checkExistingShare();
     }, [authenticated, user, project.$id]);
 
-    // Helper functions (same as before but with production URL)
+    // Helper functions
     const generateShareId = (): string => {
         return `share_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     };
@@ -138,7 +138,7 @@ ${trackableUrl}
             // Generate share data with production URL
             const shareId = generateShareId();
 
-            // FIXED: Use production domain
+            // Use production domain
             const baseUrl = process.env.NODE_ENV === 'production'
                 ? 'https://tokenready.vercel.app'
                 : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
@@ -307,9 +307,6 @@ ${trackableUrl}
                 ])
             });
 
-            // In a real implementation, you would use Twitter API to verify
-            // For now, we'll use an optimistic approach with a delay
-
             setShareResult('⏳ Verification in progress... Points will be awarded once confirmed.');
 
             // Simulate verification process (in production, this would be actual API calls)
@@ -372,23 +369,54 @@ ${trackableUrl}
         }
     };
 
+    // ✅ FIXED: Proper size styles for all button sizes
     const getSizeStyles = () => {
         switch (size) {
             case 'small':
                 return {
-                    padding: '8px 16px',
-                    fontSize: '0.875rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                    minWidth: '80px',
+                    height: '32px',
+                    px: 1.5,
+                    py: 0.5,
                 };
             case 'large':
                 return {
-                    padding: '16px 32px',
                     fontSize: '1.1rem',
+                    fontWeight: 'bold',
+                    minWidth: '140px',
+                    height: '48px',
+                    px: 4,
+                    py: 1.5,
                 };
-            default:
+            default: // medium
                 return {
-                    padding: '12px 24px',
-                    fontSize: '1rem',
+                    fontSize: '0.875rem',
+                    fontWeight: 'bold',
+                    minWidth: '110px',
+                    height: '40px',
+                    px: 3,
+                    py: 1,
                 };
+        }
+    };
+
+    // ✅ FIXED: Icon size based on button size
+    const getIconSize = () => {
+        switch (size) {
+            case 'small': return '0.875rem';
+            case 'large': return '1.25rem';
+            default: return '1rem';
+        }
+    };
+
+    // ✅ FIXED: Chip size based on button size
+    const getChipSize = () => {
+        switch (size) {
+            case 'small': return { height: 14, minWidth: 20, fontSize: '0.6rem' };
+            case 'large': return { height: 20, minWidth: 32, fontSize: '0.75rem' };
+            default: return { height: 16, minWidth: 24, fontSize: '0.65rem' };
         }
     };
 
@@ -398,14 +426,14 @@ ${trackableUrl}
             <Button
                 disabled
                 variant="contained"
-                size={size}
+                size={size}  // ✅ FIXED: Use proper MUI size prop
                 sx={{
                     backgroundColor: alpha('#1DA1F2', 0.3),
                     color: 'white',
                     ...getSizeStyles(),
                 }}
             >
-                <CircularProgress size={16} sx={{ mr: 1 }} />
+                <CircularProgress size={size === 'small' ? 14 : size === 'large' ? 20 : 16} sx={{ mr: 1 }} />
                 Checking...
             </Button>
         );
@@ -418,8 +446,8 @@ ${trackableUrl}
                 <Button
                     disabled
                     variant="contained"
-                    startIcon={<CheckCircle />}
-                    size={size}
+                    size={size}  // ✅ FIXED: Use proper MUI size prop
+                    startIcon={<CheckCircle sx={{ fontSize: getIconSize() }} />}
                     sx={{
                         backgroundColor: alpha('#00ff88', 0.2),
                         color: '#00ff88',
@@ -435,7 +463,8 @@ ${trackableUrl}
                         display: 'block',
                         mt: 1,
                         color: '#00ff88',
-                        textAlign: 'center'
+                        textAlign: 'center',
+                        fontSize: size === 'small' ? '0.65rem' : '0.75rem'
                     }}>
                         ✅ Verified & Points Awarded
                     </Typography>
@@ -446,7 +475,8 @@ ${trackableUrl}
                         display: 'block',
                         mt: 1,
                         color: '#ffa726',
-                        textAlign: 'center'
+                        textAlign: 'center',
+                        fontSize: size === 'small' ? '0.65rem' : '0.75rem'
                     }}>
                         ⏳ Verification Pending
                     </Typography>
@@ -579,18 +609,18 @@ ${trackableUrl}
         );
     }
 
-    // Button variant
+    // ✅ FIXED: Button variant with proper sizing
     return (
         <>
             <Button
                 onClick={handleShare}
                 disabled={sharing || hasAlreadyShared}
                 variant="contained"
-                startIcon={sharing ? <CircularProgress size={16} /> : hasAlreadyShared ? <CheckCircle /> : <X />}
+                size={size}  // ✅ FIXED: Use proper MUI size prop
+                startIcon={sharing ? <CircularProgress size={size === 'small' ? 14 : size === 'large' ? 20 : 16} /> : hasAlreadyShared ? <CheckCircle sx={{ fontSize: getIconSize() }} /> : <X sx={{ fontSize: getIconSize() }} />}
                 sx={{
                     backgroundColor: hasAlreadyShared ? '#00ff88' : '#1DA1F2',
                     color: hasAlreadyShared ? '#000' : 'white',
-                    fontWeight: 'bold',
                     position: 'relative',
                     ...getSizeStyles(),
                     '&:hover': {
@@ -610,15 +640,15 @@ ${trackableUrl}
                         size="small"
                         sx={{
                             position: 'absolute',
-                            top: -8,
-                            right: -8,
+                            top: size === 'small' ? -6 : size === 'large' ? -8 : -6,
+                            right: size === 'small' ? -6 : size === 'large' ? -8 : -6,
                             backgroundColor: '#00ff88',
                             color: '#000',
-                            fontSize: '0.6rem',
-                            height: 16,
-                            minWidth: 24,
                             fontWeight: 'bold',
-                            '& .MuiChip-label': { px: 0.5 }
+                            ...getChipSize(),
+                            '& .MuiChip-label': {
+                                px: size === 'small' ? 0.25 : size === 'large' ? 0.75 : 0.5
+                            }
                         }}
                     />
                 )}

@@ -1,4 +1,4 @@
-// src/components/projects/ProjectCard.tsx - Updated to show project creator
+// src/components/projects/ProjectCard.tsx - FIXED VERSION with creator info and proper button sizes
 'use client';
 
 import {
@@ -229,15 +229,18 @@ export default function ProjectCard({
             return (
                 <Button
                     variant="outlined"
-                    size="small"
-                    startIcon={<RateReview sx={{ fontSize: '1rem' }} />}
+                    size="small"  // ✅ FIXED: Explicit small size
+                    startIcon={<RateReview sx={{ fontSize: '0.875rem' }} />}
                     onClick={handleReview}
                     sx={{
                         borderColor: '#ff6b6b',
                         color: '#ff6b6b',
                         fontWeight: 'bold',
-                        fontSize: '0.8rem',
-                        py: 1,
+                        fontSize: '0.75rem',  // ✅ FIXED: Smaller font size
+                        minWidth: '80px',     // ✅ FIXED: Control minimum width
+                        height: '32px',       // ✅ FIXED: Control height
+                        px: 1.5,              // ✅ FIXED: Smaller padding
+                        py: 0.5,
                         position: 'relative',
                         '&:hover': {
                             backgroundColor: alpha('#ff6b6b', 0.1),
@@ -252,15 +255,15 @@ export default function ProjectCard({
                         size="small"
                         sx={{
                             position: 'absolute',
-                            top: -8,
-                            right: -8,
+                            top: -6,
+                            right: -6,
                             backgroundColor: '#ff6b6b',
                             color: '#000',
                             fontSize: '0.6rem',
-                            height: 16,
-                            minWidth: 24,
+                            height: 14,      // ✅ FIXED: Smaller chip
+                            minWidth: 20,    // ✅ FIXED: Smaller chip
                             fontWeight: 'bold',
-                            '& .MuiChip-label': { px: 0.5 }
+                            '& .MuiChip-label': { px: 0.25 }
                         }}
                     />
                 </Button>
@@ -271,18 +274,20 @@ export default function ProjectCard({
             return (
                 <Button
                     variant="outlined"
-                    size="small"
+                    size="small"  // ✅ FIXED: Explicit small size
                     disabled
                     sx={{
                         borderColor: '#666',
                         color: '#666',
                         fontWeight: 'bold',
-                        fontSize: '0.8rem',
-                        py: 1,
-                        minWidth: '90px',
+                        fontSize: '0.75rem',
+                        minWidth: '80px',
+                        height: '32px',
+                        px: 1.5,
+                        py: 0.5,
                     }}
                 >
-                    <CircularProgress size={16} sx={{ color: '#666' }} />
+                    <CircularProgress size={14} sx={{ color: '#666' }} />
                 </Button>
             );
         }
@@ -291,15 +296,18 @@ export default function ProjectCard({
             return (
                 <Button
                     variant="outlined"
-                    size="small"
+                    size="small"  // ✅ FIXED: Explicit small size
                     disabled
-                    startIcon={<CheckCircle sx={{ fontSize: '1rem' }} />}
+                    startIcon={<CheckCircle sx={{ fontSize: '0.875rem' }} />}
                     sx={{
                         borderColor: '#00ff88',
                         color: '#00ff88',
                         fontWeight: 'bold',
-                        fontSize: '0.8rem',
-                        py: 1,
+                        fontSize: '0.75rem',
+                        minWidth: '80px',
+                        height: '32px',
+                        px: 1.5,
+                        py: 0.5,
                         backgroundColor: alpha('#00ff88', 0.1),
                     }}
                 >
@@ -311,15 +319,18 @@ export default function ProjectCard({
         return (
             <Button
                 variant="outlined"
-                size="small"
-                startIcon={<RateReview sx={{ fontSize: '1rem' }} />}
+                size="small"  // ✅ FIXED: Explicit small size
+                startIcon={<RateReview sx={{ fontSize: '0.875rem' }} />}
                 onClick={handleReview}
                 sx={{
                     borderColor: '#ff6b6b',
                     color: '#ff6b6b',
                     fontWeight: 'bold',
-                    fontSize: '0.8rem',
-                    py: 1,
+                    fontSize: '0.75rem',
+                    minWidth: '80px',
+                    height: '32px',
+                    px: 1.5,
+                    py: 0.5,
                     position: 'relative',
                     '&:hover': {
                         backgroundColor: alpha('#ff6b6b', 0.1),
@@ -334,15 +345,15 @@ export default function ProjectCard({
                     size="small"
                     sx={{
                         position: 'absolute',
-                        top: -8,
-                        right: -8,
+                        top: -6,
+                        right: -6,
                         backgroundColor: '#ff6b6b',
                         color: '#000',
                         fontSize: '0.6rem',
-                        height: 16,
-                        minWidth: 24,
+                        height: 14,
+                        minWidth: 20,
                         fontWeight: 'bold',
-                        '& .MuiChip-label': { px: 0.5 }
+                        '& .MuiChip-label': { px: 0.25 }
                     }}
                 />
             </Button>
@@ -395,15 +406,15 @@ export default function ProjectCard({
                             @{creator.username}
                         </Typography>
                         {creator.verified && (
-                            <Verified sx={{ color: '#00ff88', fontSize: '0.8rem' }} />
+                            <Verified sx={{ color: '#00ff88', fontSize: '0.75rem' }} />
                         )}
                         {creator.isVerifiedKOL && (
                             <Chip
                                 label="KOL"
                                 size="small"
                                 sx={{
-                                    fontSize: '0.6rem',
-                                    height: 16,
+                                    fontSize: '0.55rem',
+                                    height: 14,
                                     backgroundColor: alpha('#ff6b6b', 0.2),
                                     color: '#ff6b6b',
                                     '& .MuiChip-label': { px: 0.5 }
@@ -498,54 +509,60 @@ export default function ProjectCard({
                                 </Typography>
                             </Box>
                         </Box>
-                        <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
+                        <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>  {/* ✅ FIXED: Smaller spacing */}
                             <IconButton
+                                size="small"  // ✅ FIXED: Explicit small size
                                 onClick={handleUpvote}
                                 sx={{
                                     color: isUpvoted ? '#00ff88' : '#666',
                                     position: 'relative',
+                                    width: 36,     // ✅ FIXED: Control size
+                                    height: 36,    // ✅ FIXED: Control size
                                     '&:hover': {
                                         color: '#00ff88',
                                         transform: 'scale(1.1)',
                                     }
                                 }}
                             >
-                                {isUpvoted ? <ThumbUp /> : <ThumbUpOutlined />}
+                                {isUpvoted ? <ThumbUp sx={{ fontSize: '1rem' }} /> : <ThumbUpOutlined sx={{ fontSize: '1rem' }} />}
                                 {!isUpvoted && (
                                     <Chip
                                         label="+75"
                                         size="small"
                                         sx={{
                                             position: 'absolute',
-                                            top: -8,
-                                            right: -8,
+                                            top: -6,
+                                            right: -6,
                                             backgroundColor: '#00ff88',
                                             color: '#000',
                                             fontSize: '0.6rem',
-                                            height: 16,
-                                            minWidth: 24,
+                                            height: 14,      // ✅ FIXED: Smaller chip
+                                            minWidth: 20,    // ✅ FIXED: Smaller chip
                                             fontWeight: 'bold',
-                                            '& .MuiChip-label': { px: 0.5 }
+                                            '& .MuiChip-label': { px: 0.25 }
                                         }}
                                     />
                                 )}
                             </IconButton>
                             <IconButton
+                                size="small"  // ✅ FIXED: Explicit small size
                                 onClick={handleToggleFavorite}
                                 sx={{
                                     color: isFavorited ? '#ff6b6b' : '#666',
+                                    width: 36,     // ✅ FIXED: Control size
+                                    height: 36,    // ✅ FIXED: Control size
                                     '&:hover': {
                                         color: '#ff6b6b',
                                         transform: 'scale(1.1)',
                                     }
                                 }}
                             >
-                                {isFavorited ? <Favorite /> : <FavoriteBorder />}
+                                {isFavorited ? <Favorite sx={{ fontSize: '1rem' }} /> : <FavoriteBorder sx={{ fontSize: '1rem' }} />}
                             </IconButton>
                         </Stack>
                     </Box>
 
-                    {/* Creator Info */}
+                    {/* ✅ FIXED: Creator Info - Now properly displayed in header */}
                     {renderCreatorInfo()}
 
                     {/* Status and Category */}
@@ -673,13 +690,13 @@ export default function ProjectCard({
                         </Grid>
                     </Box>
 
-                    {/* Action Buttons */}
+                    {/* Action Buttons - ✅ FIXED: All buttons properly sized */}
                     <Box sx={{ mb: 2 }}>
                         <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                             <Button
                                 variant="contained"
-                                size="small"
-                                startIcon={<Launch sx={{ fontSize: '1rem' }} />}
+                                size="small"  // ✅ FIXED: Explicit small size
+                                startIcon={<Launch sx={{ fontSize: '0.875rem' }} />}
                                 href={project.website}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -690,8 +707,10 @@ export default function ProjectCard({
                                     background: 'linear-gradient(45deg, #00ff88, #4dffb0)',
                                     color: '#000',
                                     fontWeight: 'bold',
-                                    fontSize: '0.8rem',
-                                    py: 1,
+                                    fontSize: '0.75rem',  // ✅ FIXED: Smaller font
+                                    height: '32px',       // ✅ FIXED: Control height
+                                    px: 1.5,              // ✅ FIXED: Smaller padding
+                                    py: 0.5,
                                     '&:hover': {
                                         background: 'linear-gradient(45deg, #4dffb0, #00ff88)',
                                         transform: 'translateY(-1px)',
@@ -705,7 +724,7 @@ export default function ProjectCard({
                             <TrackableShareButton
                                 project={project}
                                 variant="button"
-                                size="small"
+                                size="small"  // ✅ FIXED: Pass small size
                             />
                         </Stack>
                     </Box>
@@ -713,9 +732,9 @@ export default function ProjectCard({
                     {/* Sharers and Social Links Section */}
                     <Box sx={{ mt: 'auto' }}>
                         <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="center">
-                            <Stack direction="row" spacing={1}>
+                            <Stack direction="row" spacing={0.5}>  {/* ✅ FIXED: Smaller spacing */}
                                 <IconButton
-                                    size="small"
+                                    size="small"  // ✅ FIXED: Explicit small size
                                     href={`https://twitter.com/${project.twitter.replace('@', '')}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -725,6 +744,8 @@ export default function ProjectCard({
                                         backgroundColor: '#000',
                                         color: '#FFF',
                                         border: '1px solid #000',
+                                        width: 28,      // ✅ FIXED: Control size
+                                        height: 28,     // ✅ FIXED: Control size
                                         '&:hover': {
                                             backgroundColor: '#000',
                                             color: 'white',
@@ -732,11 +753,11 @@ export default function ProjectCard({
                                         }
                                     }}
                                 >
-                                    <X sx={{ fontSize: '1rem' }} />
+                                    <X sx={{ fontSize: '0.875rem' }} />
                                 </IconButton>
                                 {project.github && (
                                     <IconButton
-                                        size="small"
+                                        size="small"  // ✅ FIXED: Explicit small size
                                         href={project.github}
                                         target="_blank"
                                         rel="noopener noreferrer"
@@ -746,6 +767,8 @@ export default function ProjectCard({
                                             backgroundColor: '#000',
                                             color: '#FFF',
                                             border: '1px solid #000',
+                                            width: 28,      // ✅ FIXED: Control size
+                                            height: 28,     // ✅ FIXED: Control size
                                             '&:hover': {
                                                 backgroundColor: '#000',
                                                 color: 'white',
@@ -753,7 +776,7 @@ export default function ProjectCard({
                                             }
                                         }}
                                     >
-                                        <GitHub sx={{ fontSize: '1.2rem' }} />
+                                        <GitHub sx={{ fontSize: '1rem' }} />
                                     </IconButton>
                                 )}
                             </Stack>
