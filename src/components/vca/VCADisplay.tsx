@@ -1,4 +1,4 @@
-// src/components/vca/SimpleVCADisplay.tsx
+// src/components/vca/EnhancedVCADisplay.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -8,19 +8,38 @@ import {
     Tooltip,
     alpha,
     IconButton,
-    Chip,
+    Grid,
+    Divider,
+    Card,
+    CardContent,
 } from '@mui/material';
 import {
     ContentCopy,
     Done,
 } from '@mui/icons-material';
 
-interface SimpleVCADisplayProps {
+interface EnhancedVCADisplayProps {
     vcaAddress?: string;
+    projectMetrics?: {
+        signalScore?: number;
+        uniqueBackers?: number;
+        reviews?: number;
+        upvotes?: string[];
+    };
 }
 
-export default function SimpleVCADisplay({ vcaAddress }: SimpleVCADisplayProps) {
+export default function EnhancedVCADisplay({
+    vcaAddress,
+    projectMetrics = {}
+}: EnhancedVCADisplayProps) {
     const [copied, setCopied] = useState(false);
+
+    const {
+        signalScore = 0,
+        uniqueBackers = 0,
+        reviews = 0,
+        upvotes = []
+    } = projectMetrics;
 
     // Handle copy address to clipboard
     const handleCopyAddress = () => {
@@ -36,63 +55,88 @@ export default function SimpleVCADisplay({ vcaAddress }: SimpleVCADisplayProps) 
             });
     };
 
-    // Format address for display
-    const formatAddress = (address: string) => {
-        if (!address) return '';
-        if (address.length <= 12) return address;
-        return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-    };
-
     if (!vcaAddress) {
         return null;
     }
 
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 2,
-                p: 2,
-                background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
-                border: '1px solid #333',
-                borderRadius: 2,
-            }}
-        >
-            <Box>
-                <Typography variant="body2" sx={{ color: '#888', mb: 0.5 }}>
-                    Virtual Contract Address:
+        <Card sx={{
+            background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
+            border: '1px solid #333',
+            borderRadius: 3,
+            mb: 3,
+        }}>
+            <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" sx={{ mb: 3, color: '#00ff88', fontWeight: 'bold' }}>
+                    Virtual Contract Address (VCA)
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body2" fontFamily="monospace" sx={{ color: '#00ff88' }}>
-                        {vcaAddress}
+
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="body2" sx={{ color: '#888', mb: 1 }}>
+                        Address:
                     </Typography>
-                    <Tooltip title={copied ? "Copied!" : "Copy to clipboard"} arrow>
-                        <IconButton
-                            size="small"
-                            onClick={handleCopyAddress}
-                            sx={{
-                                color: copied ? '#00ff88' : '#666',
-                                '&:hover': {
-                                    backgroundColor: alpha('#00ff88', 0.1),
-                                },
-                            }}
-                        >
-                            {copied ? <Done fontSize="small" /> : <ContentCopy fontSize="small" />}
-                        </IconButton>
-                    </Tooltip>
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        p: 2,
+                        backgroundColor: alpha('#00ff88', 0.05),
+                        borderRadius: 2,
+                        border: '1px solid #333',
+                    }}>
+                        <Typography variant="body1" fontFamily="monospace" sx={{ color: 'white', wordBreak: 'break-all' }}>
+                            {vcaAddress}
+                        </Typography>
+                        <Tooltip title={copied ? "Copied!" : "Copy to clipboard"} arrow>
+                            <IconButton
+                                size="small"
+                                onClick={handleCopyAddress}
+                                sx={{
+                                    color: copied ? '#00ff88' : '#666',
+                                    '&:hover': {
+                                        backgroundColor: alpha('#00ff88', 0.1),
+                                    }
+                                }}
+                            >
+                                {copied ? <Done /> : <ContentCopy />}
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
                 </Box>
-            </Box>
-            <Chip
-                label="VCA"
-                size="small"
-                sx={{
-                    backgroundColor: alpha('#00ff88', 0.2),
-                    color: '#00ff88',
-                    fontWeight: 'bold',
-                }}
-            />
-        </Box>
+
+                <Grid container spacing={3} sx={{ mb: 3 }}>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" sx={{ color: '#00ff88', fontWeight: 'bold' }}>
+                                {signalScore}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#888' }}>
+                                Signal Score
+                            </Typography>
+                        </Box>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" sx={{ color: '#ffa726', fontWeight: 'bold' }}>
+                                {uniqueBackers}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#888' }}>
+                                Unique Backers
+                            </Typography>
+                        </Box>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" sx={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+                                {reviews}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#888' }}>
+                                Reviews
+                            </Typography>
+                        </Box>
+                    </Grid>
+                </Grid>
+            </CardContent>
+        </Card>
     );
 }
