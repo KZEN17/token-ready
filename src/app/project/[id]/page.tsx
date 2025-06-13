@@ -21,7 +21,7 @@ import { ReviewService } from '@/lib/reviewService';
 import { useUser } from '@/hooks/useUser';
 import { useShareTracking } from '@/hooks/useShareTracking'; // NEW
 import { Project } from '@/lib/types';
-import VCADisplay from '@/components/vca/VCADisplay';
+import SimpleVCADisplay from '@/components/vca/VCADisplay';
 
 
 interface ReviewStats {
@@ -265,12 +265,11 @@ export default function ProjectDetailsPage() {
                     <Grid size={{ xs: 12 }}>
                         <ProjectSharers projectId={project.$id} compact={false} limit={10} />
                     </Grid>
-                    <Grid size={{ xs: 12 }}>
-                        <VCADisplay
-                            projectId={project.$id}
-                            compact={false}
-                        />
-                    </Grid>
+                    {project.vcaAddress && (
+                        <Grid size={{ xs: 12 }}>
+                            <SimpleVCADisplay vcaAddress={project.vcaAddress} />
+                        </Grid>
+                    )}
                     {/* Project Review Form */}
                     <Grid size={{ xs: 12, md: 8 }}>
                         <ProjectReviewForm

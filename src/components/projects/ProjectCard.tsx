@@ -414,7 +414,7 @@ export default function ProjectCard({
         <>
             <Card
                 sx={{
-                    height: '580px', // Slightly increased height for creator info
+                    height: '600px', // Slightly increased height for creator info
                     display: 'flex',
                     flexDirection: 'column',
                     background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
@@ -490,9 +490,13 @@ export default function ProjectCard({
                                 >
                                     {project.ticker}
                                 </Typography>
+
                             </Box>
+
                         </Box>
+
                         <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>  {/* ✅ FIXED: Smaller spacing */}
+
                             <IconButton
                                 size="small"  // ✅ FIXED: Explicit small size
                                 onClick={handleUpvote}
@@ -529,8 +533,24 @@ export default function ProjectCard({
                             </IconButton>
 
                         </Stack>
-                    </Box>
 
+                    </Box>
+                    <Typography variant="caption" sx={{ color: '#00ff88', fontWeight: 'bold', display: 'block', mb: 1 }}>
+                        VCA
+                    </Typography>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: '#b0b0b0',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        {project.vcaAddress}
+                    </Typography>
                     {/* ✅ FIXED: Creator Info - Now properly displayed in header */}
                     {renderCreatorInfo()}
 

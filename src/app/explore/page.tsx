@@ -21,7 +21,6 @@ import { useAuthGuard } from '@/hooks/useAuthGuard';
 import ExploreHero from '@/components/explore/ExploreHero';
 import ExploreFilters from '@/components/explore/ExploreFilters';
 import EmptyState from '@/components/explore/EmptyState';
-import FloatingActionButton from '@/components/explore/FloatingActionButton';
 import ProjectCard from '@/components/projects/ProjectCard';
 import AuthDialog from '@/components/auth/AuthDialog';
 import { Project } from '@/lib/types';
