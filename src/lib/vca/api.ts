@@ -11,30 +11,31 @@ export class VCAApi {
      * Create a new VCA for a project
      */
     // Add this to your createVCA method in src/lib/vca/api.ts
-    static async createVCA(slug: string, owner: string): Promise<{ address: string, metadata: VCAMetadata }> {
-        console.log(`VCAApi.createVCA: Creating VCA for slug=${slug}, owner=${owner}`);
+    static async createVCA(projectId: string, owner: string): Promise<{ address: string, metadata: VCAMetadata }> {
+        console.log(`VCAApi.createVCA: Creating VCA for projectId=${projectId}, owner=${owner}`);
 
         try {
-            // Check if VCA already exists for this slug
+            // Check if VCA already exists for this project ID
             let existing = null;
             try {
-                existing = await vcaStorage.getVCABySlug(slug);
-                console.log(`Checked for existing VCA with slug=${slug}, result:`, existing);
+                existing = await vcaStorage.getVCABySlug(projectId);
+                console.log(`Checked for existing VCA with projectId=${projectId}, result:`, existing);
             } catch (existingError) {
                 console.error(`Error checking for existing VCA:`, existingError);
             }
 
             if (existing) {
-                console.log(`VCA already exists for slug=${slug}:`, existing);
+                console.log(`VCA already exists for projectId=${projectId}:`, existing);
                 return existing;
             }
 
             // Create new VCA
-            console.log(`Creating new VCA with slug=${slug}, owner=${owner}`);
-            const vca = VCAProtocol.createVCA(slug, owner);
+            console.log(`Creating new VCA with projectId=${projectId}, owner=${owner}`);
+            // Use the project ID as the slug parameter in the VCAProtocol.createVCA call
+            const vca = VCAProtocol.createVCA(projectId, owner);
             console.log(`Created new VCA object:`, vca);
 
-            // Save to storage - this is where the error likely happens
+            // Save to storage
             console.log(`Attempting to save VCA to storage: address=${vca.address}`);
             try {
                 await vcaStorage.saveVCA(vca.address, vca.metadata);
@@ -47,7 +48,7 @@ export class VCAApi {
             return vca;
         } catch (error) {
             // Detailed error logging
-            console.error(`Failed to create VCA for slug=${slug}:`, error);
+            console.error(`Failed to create VCA for projectId=${projectId}:`, error);
             if (error instanceof Error) {
                 console.error(`Error name: ${error.name}, message: ${error.message}`);
                 console.error(`Error stack: ${error.stack}`);
@@ -86,25 +87,32 @@ export class VCAApi {
     /**
      * Get VCA by project slug
      */
-    static async getVCABySlug(slug: string): Promise<{ address: string, metadata: VCAMetadata } | null> {
-        console.log(`VCAApi.getVCABySlug: Getting VCA for slug=${slug}`);
+    /**
+     * Get VCA by project ID
+     * This replaces the previous getVCABySlug method
+     */
+    static async getVCAByProjectId(projectId: string): Promise<{ address: string, metadata: VCAMetadata } | null> {
+        console.log(`VCAApi.getVCAByProjectId: Getting VCA for projectId=${projectId}`);
 
         try {
-            // Important: Normalize the slug to ensure consistency
-            const normalizedSlug = slug.trim().toLowerCase();
-            console.log(`Normalized slug: ${normalizedSlug}`);
+            // Important: Normalize the project ID to ensure consistency
+            const normalizedProjectId = projectId.trim();
+            console.log(`Normalized projectId: ${normalizedProjectId}`);
 
-            const result = await vcaStorage.getVCABySlug(normalizedSlug);
-            console.log(`Result for slug=${normalizedSlug}:`, result);
+            // Use the project ID as the slug in the storage call
+            // You could rename the method in vcaStorage as well, but for simplicity
+            // we'll keep using the existing method with the new parameter
+            const result = await vcaStorage.getVCABySlug(normalizedProjectId);
+            console.log(`Result for projectId=${normalizedProjectId}:`, result);
 
             if (!result) {
-                console.log(`No VCA found for slug=${normalizedSlug}`);
+                console.log(`No VCA found for projectId=${normalizedProjectId}`);
                 return null;
             }
 
             return result;
         } catch (error) {
-            console.error(`Failed to get VCA for slug=${slug}:`, error);
+            console.error(`Failed to get VCA for projectId=${projectId}:`, error);
 
             // Enhanced error handling
             let errorMessage = 'Unknown error';
@@ -115,7 +123,7 @@ export class VCAApi {
                 console.error(`Error stack: ${error.stack}`);
             }
 
-            throw new Error(`Failed to get VCA by slug: ${errorMessage}`);
+            throw new Error(`Failed to get VCA by projectId: ${errorMessage}`);
         }
     }
 

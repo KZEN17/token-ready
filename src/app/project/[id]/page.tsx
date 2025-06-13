@@ -267,7 +267,7 @@ export default function ProjectDetailsPage() {
                     </Grid>
                     <Grid size={{ xs: 12 }}>
                         <VCADisplay
-                            projectSlug={project.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}
+                            projectId={project.$id}
                             compact={false}
                         />
                     </Grid>

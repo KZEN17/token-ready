@@ -30,11 +30,11 @@ import { useUser } from '@/hooks/useUser';
 import { VCAMetadata } from '@/lib/types';
 
 interface VCADisplayProps {
-    projectSlug: string;
+    projectId: string;
     compact?: boolean;
 }
 
-export default function VCADisplay({ projectSlug, compact = false }: VCADisplayProps) {
+export default function VCADisplay({ projectId, compact = false }: VCADisplayProps) {
     const { user, authenticated } = useUser();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -47,16 +47,16 @@ export default function VCADisplay({ projectSlug, compact = false }: VCADisplayP
     // Load VCA data for this project
     useEffect(() => {
         loadVCAData();
-    }, [projectSlug]);
+    }, [projectId]);
 
     const loadVCAData = async () => {
-        if (!projectSlug) return;
+        if (!projectId) return;
 
         try {
             setLoading(true);
             setError(null);
 
-            const vca = await VCAApi.getVCABySlug(projectSlug);
+            const vca = await VCAApi.getVCAByProjectId(projectId);
             setVcaData(vca);
 
             setLoading(false);

@@ -174,7 +174,7 @@ export interface ProjectWithCreator extends Project {
     creator?: ProjectCreator;
 }
 export interface VCAMetadata {
-    projectSlug: string;        // Unique project identifier
+    projectId: string;        // Unique project identifier
     owner: string;              // Owner address or Twitter handle
     signalScore: number;        // Combined score from backings, shares, reviews
     uniqueBackers: number;      // Number of unique backers
