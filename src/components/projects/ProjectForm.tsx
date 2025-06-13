@@ -279,16 +279,20 @@ export default function ProjectForm() {
                 github: data.github,
                 twitter: data.twitter.startsWith('@') ? data.twitter : `@${data.twitter}`,
                 category: data.category,
-                status: 'pending' as const,
+                status: 'pending', // Keep as pending
+                adminReviewStatus: 'pending', // Add this new field
                 launchDate: new Date(data.launchDate).toISOString(),
                 teamMembers: validTeamMembers,
                 whitepaper: data.whitepaper,
                 requestTwitterSpace: data.requestTwitterSpace === 'true',
                 logoUrl: logoUrl,
-                createdBy: user.$id, // ✅ Use actual user ID instead of placeholder
+                createdBy: user.$id,
                 platform: selectedPlatform,
                 chain: selectedChain,
-
+                reviewedBy: '',
+                reviewedAt: '',
+                reviewNotes: '',
+                vcaAddress: '',
                 // Default values
                 totalStaked: 0,
                 believers: 0,
@@ -300,7 +304,6 @@ export default function ProjectForm() {
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
-
             const response = await databases.createDocument(
                 DATABASE_ID,
                 PROJECTS_COLLECTION_ID,

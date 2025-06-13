@@ -527,27 +527,14 @@ export default function ProjectCard({
                                     />
                                 )}
                             </IconButton>
-                            <IconButton
-                                size="small"  // ✅ FIXED: Explicit small size
-                                onClick={handleToggleFavorite}
-                                sx={{
-                                    color: isFavorited ? '#ff6b6b' : '#666',
-                                    width: 36,     // ✅ FIXED: Control size
-                                    height: 36,    // ✅ FIXED: Control size
-                                    '&:hover': {
-                                        color: '#ff6b6b',
-                                        transform: 'scale(1.1)',
-                                    }
-                                }}
-                            >
-                                {isFavorited ? <Favorite sx={{ fontSize: '1rem' }} /> : <FavoriteBorder sx={{ fontSize: '1rem' }} />}
-                            </IconButton>
+
                         </Stack>
                     </Box>
 
                     {/* ✅ FIXED: Creator Info - Now properly displayed in header */}
                     {renderCreatorInfo()}
 
+                    {/* Status and Category */}
                     {/* Status and Category */}
                     <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                         <Chip
@@ -562,6 +549,34 @@ export default function ProjectCard({
                                 fontSize: '0.7rem'
                             }}
                         />
+                        {/* Add admin review status chip */}
+                        {project.adminReviewStatus === 'pending' && (
+                            <Chip
+                                label="UNDER REVIEW"
+                                size="small"
+                                sx={{
+                                    backgroundColor: alpha('#ffa726', 0.2),
+                                    color: '#ffa726',
+                                    border: '1px solid #ffa726',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.7rem',
+                                    animation: 'pulse 2s infinite'
+                                }}
+                            />
+                        )}
+                        {project.adminReviewStatus === 'approved' && (
+                            <Chip
+                                label="✓ VERIFIED"
+                                size="small"
+                                sx={{
+                                    backgroundColor: alpha('#00ff88', 0.2),
+                                    color: '#00ff88',
+                                    border: '1px solid #00ff88',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.7rem'
+                                }}
+                            />
+                        )}
                         <Chip
                             label={project.category}
                             size="small"

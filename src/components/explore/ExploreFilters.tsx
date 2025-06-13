@@ -36,6 +36,8 @@ const categories = [
 
 const sortOptions = [
     { value: 'newest', label: 'Newest First' },
+    { value: 'verified', label: 'Verified Projects' }, // Add this
+    { value: 'pending', label: 'Under Review' }, // Add this
     { value: 'bobScore', label: 'Highest BOB Score' },
     { value: 'believers', label: 'Most Believers' },
     { value: 'totalStaked', label: 'Most Staked' },

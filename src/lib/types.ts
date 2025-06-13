@@ -57,6 +57,7 @@ export interface Project {
     twitter: string;
     category: string;
     status: string;
+    adminReviewStatus: string;
     launchDate?: string;
     logoUrl?: string;
     totalStaked: number;
@@ -72,6 +73,10 @@ export interface Project {
     createdBy: string; // ✅ User ID of the creator (User.$id)
     updatedAt: string; // Last updated timestamp
     createdAt: string;
+    reviewedBy?: string;
+    reviewedAt?: string;
+    reviewNotes?: string;
+    vcaAddress?: string;
 }
 
 export interface Review {

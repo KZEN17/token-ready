@@ -1,6 +1,7 @@
 // src/app/admin/page.tsx - Updated with VCA Testing
 'use client';
 
+import ProjectReviewAdmin from '@/components/admin/ProjectReviewAdmin';
 import ShareVerificationAdmin from '@/components/admin/ShareVerificationAdmin';
 import SimpleVCATest from '@/components/vca/SimpleTest';
 import { Box, Typography, Container, Tabs, Tab } from '@mui/material';
@@ -55,13 +56,15 @@ export default function AdminPage() {
                         }}
                     >
                         <Tab label="Share Verification" />
-                        <Tab label="VCA Testing" />
+                        <Tab label="Project Reviews" />
+                        {/* <Tab label="VCA Testing" /> */}
                     </Tabs>
                 </Box>
 
                 {/* Tab Content */}
                 {activeTab === 0 && <ShareVerificationAdmin />}
-                {activeTab === 1 && <SimpleVCATest />}
+                {/* {activeTab === 1 && <SimpleVCATest />} */}
+                {activeTab === 1 && <ProjectReviewAdmin />}
             </Container>
         </Box>
     );

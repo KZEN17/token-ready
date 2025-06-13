@@ -91,6 +91,14 @@ export default function ExplorePage() {
             case 'newest':
                 filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 break;
+            case 'verified': // Add this case
+                filtered = filtered.filter(project => project.adminReviewStatus === 'approved');
+                filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                break;
+            case 'pending': // Add this case
+                filtered = filtered.filter(project => project.adminReviewStatus === 'pending');
+                filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                break;
             case 'bobScore':
                 filtered.sort((a, b) => b.bobScore - a.bobScore);
                 break;
