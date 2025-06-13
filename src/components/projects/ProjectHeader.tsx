@@ -1,3 +1,4 @@
+// src/components/projects/ProjectHeader.tsx - Enhanced to show project creator
 'use client';
 
 import {
@@ -10,6 +11,8 @@ import {
     Chip,
     Avatar,
     alpha,
+    CircularProgress,
+    Tooltip,
 } from '@mui/material';
 import {
     ThumbUp,
@@ -20,7 +23,11 @@ import {
     ThumbUpOutlined,
     People,
     AccountBalanceWallet,
+    Person,
+    Verified,
 } from '@mui/icons-material';
+import { useState, useEffect } from 'react';
+import { databases, DATABASE_ID, USERS_COLLECTION_ID } from '@/lib/appwrite';
 
 interface Project {
     $id: string;
@@ -40,6 +47,18 @@ interface Project {
     bobScore: number;
     upvotes: string[];
     createdAt: string;
+    createdBy?: string; // This is the user ID of the creator
+}
+
+interface Creator {
+    $id: string;
+    username: string;
+    displayName: string;
+    profileImage: string;
+    isVerifiedKOL: boolean;
+    verified: boolean;
+    believerRank: string;
+    followerCount: number;
 }
 
 interface ProjectHeaderProps {
@@ -53,6 +72,44 @@ export default function ProjectHeader({
     currentUserId,
     onUpvote,
 }: ProjectHeaderProps) {
+    // Creator state
+    const [creator, setCreator] = useState<Creator | null>(null);
+    const [loadingCreator, setLoadingCreator] = useState(false);
+
+    // Fetch creator information
+    useEffect(() => {
+        const fetchCreator = async () => {
+            if (!project.createdBy || project.createdBy === 'user-id-placeholder') return;
+
+            setLoadingCreator(true);
+            try {
+                const creatorResponse = await databases.getDocument(
+                    DATABASE_ID,
+                    USERS_COLLECTION_ID,
+                    project.createdBy
+                );
+
+                setCreator({
+                    $id: creatorResponse.$id,
+                    username: creatorResponse.username || 'anonymous',
+                    displayName: creatorResponse.displayName || 'Anonymous Creator',
+                    profileImage: creatorResponse.profileImage || '',
+                    isVerifiedKOL: creatorResponse.isVerifiedKOL || false,
+                    verified: creatorResponse.verified || false,
+                    believerRank: creatorResponse.believerRank || 'Believer',
+                    followerCount: creatorResponse.followerCount || 0,
+                });
+            } catch (error) {
+                console.error('Failed to fetch creator:', error);
+                setCreator(null);
+            } finally {
+                setLoadingCreator(false);
+            }
+        };
+
+        fetchCreator();
+    }, [project.createdBy]);
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'approved': return '#00ff88';
@@ -69,6 +126,73 @@ export default function ProjectHeader({
     };
 
     const isUpvoted = project.upvotes.includes(currentUserId);
+
+    const renderCreatorInfo = () => {
+        if (loadingCreator) {
+            return (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <CircularProgress size={16} sx={{ color: '#666' }} />
+                    <Typography variant="caption" sx={{ color: '#888' }}>
+                        Loading creator...
+                    </Typography>
+                </Box>
+            );
+        }
+
+        if (!creator) {
+            return (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <Person sx={{ color: '#666', fontSize: '1rem' }} />
+                    <Typography variant="caption" sx={{ color: '#888' }}>
+                        Creator: Unknown
+                    </Typography>
+                </Box>
+            );
+        }
+
+        return (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                <Tooltip
+                    title={`@${creator.username} • ${creator.followerCount.toLocaleString()} followers • ${creator.believerRank}`}
+                    arrow
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+                        <Avatar
+                            src={creator.profileImage || undefined}
+                            sx={{
+                                width: 24,
+                                height: 24,
+                                fontSize: '0.75rem',
+                                backgroundColor: '#00ff88',
+                                color: '#000',
+                            }}
+                        >
+                            {creator.displayName.charAt(0)}
+                        </Avatar>
+                        <Typography variant="body2" sx={{ color: '#00ff88', fontWeight: 'bold' }}>
+                            Created by @{creator.username}
+                        </Typography>
+                        {creator.verified && (
+                            <Verified sx={{ color: '#00ff88', fontSize: '0.8rem' }} />
+                        )}
+                        {creator.isVerifiedKOL && (
+                            <Chip
+                                label="KOL"
+                                size="small"
+                                sx={{
+                                    fontSize: '0.6rem',
+                                    height: 16,
+                                    backgroundColor: alpha('#ff6b6b', 0.2),
+                                    color: '#ff6b6b',
+                                    '& .MuiChip-label': { px: 0.5 }
+                                }}
+                            />
+                        )}
+                    </Box>
+                </Tooltip>
+            </Box>
+        );
+    };
 
     return (
         <Card sx={{
@@ -151,6 +275,9 @@ export default function ProjectHeader({
                                 }}
                             />
                         </Box>
+
+                        {/* Creator Info */}
+                        {renderCreatorInfo()}
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                         <Button
