@@ -34,7 +34,7 @@ interface ProjectFormData {
     requestTwitterSpace: string;
     whitepaper: string;
     category: string;
-    // NEW FIELDS - not in form data since they're handled separately
+
 }
 
 // Simplified logo validation function
@@ -235,13 +235,13 @@ export default function ProjectForm() {
 
         try {
             // Validate new required fields
-            if (selectedPlatform) {
+            if (!selectedPlatform) {
                 setPlatformError('Please select at least one launch platform');
                 setLoading(false);
                 return;
             }
 
-            if (selectedChain) {
+            if (!selectedChain) {
                 setChainError('Please select at least one blockchain network');
                 setLoading(false);
                 return;
@@ -279,7 +279,7 @@ export default function ProjectForm() {
                 whitepaper: data.whitepaper,
                 requestTwitterSpace: data.requestTwitterSpace === 'true',
                 logoUrl: logoUrl,
-
+                createdBy: 'user-id-placeholder', // Replace with actual user ID from context or auth
                 // NEW FIELDS for launch platforms and chains
                 platform: selectedPlatform, // Array of selected platforms
                 chain: selectedChain, // Array of selected chains

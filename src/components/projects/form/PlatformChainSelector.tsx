@@ -12,7 +12,6 @@ import {
     Card,
     CardContent,
 } from '@mui/material';
-import { UseFormRegisterReturn } from 'react-hook-form';
 
 interface LaunchPlatformSectionProps {
     selectedPlatform: string;
@@ -88,6 +87,7 @@ export default function LaunchPlatformSection({
     platformError,
     chainError,
 }: LaunchPlatformSectionProps) {
+    console.log(selectedPlatform, selectedChain, platformError, chainError);
     return (
         <Box>
             {/* Launch Platform Section */}
